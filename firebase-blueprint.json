@@ -62,6 +62,8 @@
         "technologies": { "type": "array", "items": { "type": "string" } },
         "imageUrl": { "type": "string" },
         "images": { "type": "array", "items": { "type": "string" } },
+        "videoUrl": { "type": "string" },
+        "videoThumbnail": { "type": "string" },
         "link": { "type": "string" },
         "order": { "type": "integer" }
       },
@@ -93,7 +95,8 @@
         "projectsSubtitle": { "type": "string" },
         "certificatesSubtitle": { "type": "string" },
         "skillsSubtitle": { "type": "string" },
-        "blogsSubtitle": { "type": "string" }
+        "blogsSubtitle": { "type": "string" },
+        "showVideoThumbnailAsProjectImage": { "type": "boolean" }
       }
     },
     "specialization": {

@@ -15,7 +15,9 @@ import {
   ArrowRight,
   Sparkles,
   Share2,
-  Check
+  Check,
+  Play,
+  Video
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
@@ -26,6 +28,7 @@ import ScrambleHeader from '../components/ScrambleHeader';
 import PageWrapper from '../components/PageWrapper';
 import ImageViewer from '../components/ImageViewer';
 import { useLanguage } from '../context/LanguageContext';
+import { getProjectDisplayMedia, isVideoMedia } from '../lib/videoUtils';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -39,6 +42,18 @@ export default function ProjectsPage() {
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [detectedVideos, setDetectedVideos] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch('/api/projects/all-detected-videos')
+      .then(r => r.json())
+      .then(map => {
+        if (map && typeof map === 'object') {
+          setDetectedVideos(map);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const qProjects = query(collection(db, 'projects'), orderBy('order', 'asc'));
@@ -242,11 +257,18 @@ export default function ProjectsPage() {
                           <span className="text-[9px] font-black font-mono tracking-widest text-blue-500">
                             NODE_{String(idx + 1).padStart(2, '0')}
                           </span>
-                          {proj.inProgress && (
-                            <span className="text-[8px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/10">
-                              WIP
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {(proj.videoUrl || (proj.images && proj.images.some(isVideoMedia))) && (
+                              <span className="text-[8px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20 flex items-center gap-1">
+                                <Play className="w-2 h-2 fill-current" /> Video
+                              </span>
+                            )}
+                            {proj.inProgress && (
+                              <span className="text-[8px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/10">
+                                WIP
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <h4 className={`font-bold text-base mt-2 transition-colors duration-300 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'} line-clamp-1`}>
                           {proj.title}
@@ -338,23 +360,51 @@ export default function ProjectsPage() {
 
                     {/* Multimedia Gallery Container */}
                     {(() => {
-                      const imagesList = activeProject?.images && activeProject.images.length > 0 
-                        ? activeProject.images 
-                        : (activeProject?.imageUrl ? [activeProject.imageUrl] : []);
+                      if (!activeProject) return null;
+                      const displayMedia = getProjectDisplayMedia(
+                        activeProject, 
+                        settings?.showVideoThumbnailAsProjectImage,
+                        activeProject.id ? detectedVideos[activeProject.id] : undefined
+                      );
+                      const videoIdx = displayMedia.allMedia.findIndex(isVideoMedia);
 
                       return (
                         <div className="aspect-video md:aspect-[21/9] bg-zinc-900 relative overflow-hidden group">
-                          {imagesList.length > 0 ? (
-                            <ImageViewer images={imagesList} label="Project Showcase">
+                          {displayMedia.pictureUrl ? (
+                            <ImageViewer 
+                              images={displayMedia.allMedia} 
+                              label="Project Showcase"
+                              initialIndex={displayMedia.hasVideo && videoIdx >= 0 ? videoIdx : 0}
+                            >
                               <div className="relative w-full h-full cursor-pointer overflow-hidden">
-                                <img 
-                                  src={imagesList[0]} 
-                                  alt={activeProject?.title} 
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                                />
+                                {displayMedia.isDirectVideo ? (
+                                  <video 
+                                    src={`${displayMedia.pictureUrl}#t=0.001`} 
+                                    preload="metadata" 
+                                    muted 
+                                    playsInline 
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" 
+                                  />
+                                ) : (
+                                  <img 
+                                    src={displayMedia.pictureUrl} 
+                                    alt={activeProject?.title} 
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                  />
+                                )}
+                                {displayMedia.hasVideo && (
+                                  <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white flex items-center gap-1.5 shadow-lg">
+                                    <Play className="w-3.5 h-3.5 fill-white text-white" />
+                                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Video Stream</span>
+                                  </div>
+                                )}
                                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
-                                  <div className="p-3 bg-black/70 rounded-full border border-white/20 scale-90 group-hover:scale-100 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                    <Sparkles className="w-6 h-6 text-blue-400" />
+                                  <div className="p-3.5 bg-black/70 rounded-full border border-white/20 scale-90 group-hover:scale-100 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                    {displayMedia.hasVideo ? (
+                                      <Play className="w-6 h-6 text-blue-400 fill-blue-400 ml-0.5" />
+                                    ) : (
+                                      <Sparkles className="w-6 h-6 text-blue-400" />
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -362,7 +412,7 @@ export default function ProjectsPage() {
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center opacity-20 text-white p-8">
                               <Shield className="w-16 h-16 text-blue-500 animate-pulse" />
-                              <span className="text-[10px] uppercase tracking-[0.3em] font-mono mt-4">NO IMAGE ATTACHED</span>
+                              <span className="text-[10px] uppercase tracking-[0.3em] font-mono mt-4">NO MEDIA ATTACHED</span>
                             </div>
                           )}
                         </div>
@@ -410,16 +460,31 @@ export default function ProjectsPage() {
 
                       {/* Launch Actions */}
                       <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        {/* Gallery toggle built inside if available */}
-                        {activeProject && activeProject.images && activeProject.images.length > 0 && (
-                          <div className="flex items-center">
-                            <ImageViewer 
-                              images={activeProject.images} 
-                              label="Project Gallery" 
-                              triggerText={language === 'en' ? 'Show Telemetry Gallery' : 'عرض معرض الصور'} 
-                            />
-                          </div>
-                        )}
+                        {/* Gallery / Video toggle built inside if available */}
+                        {(() => {
+                          if (!activeProject) return null;
+                          const displayMedia = getProjectDisplayMedia(
+                            activeProject, 
+                            settings?.showVideoThumbnailAsProjectImage,
+                            activeProject.id ? detectedVideos[activeProject.id] : undefined
+                          );
+                          if (displayMedia.allMedia.length === 0) return null;
+                          const videoIdx = displayMedia.allMedia.findIndex(isVideoMedia);
+                          return (
+                            <div className="flex items-center">
+                              <ImageViewer 
+                                images={displayMedia.allMedia} 
+                                label="Project Gallery" 
+                                initialIndex={displayMedia.hasVideo && videoIdx >= 0 ? videoIdx : 0}
+                                triggerText={
+                                  displayMedia.hasVideo
+                                    ? (language === 'en' ? 'Watch Video & Gallery' : 'مشاهدة الفيديو والمعرض')
+                                    : (language === 'en' ? 'Show Telemetry Gallery' : 'عرض معرض الصور')
+                                } 
+                              />
+                            </div>
+                          );
+                        })()}
 
                         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:ml-auto justify-end">
                           {activeProject && (
@@ -477,9 +542,12 @@ export default function ProjectsPage() {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
               {projects.map((project, i) => {
-                const imagesList = project.images && project.images.length > 0 
-                  ? project.images 
-                  : (project.imageUrl ? [project.imageUrl] : []);
+                const displayMedia = getProjectDisplayMedia(
+                  project, 
+                  settings?.showVideoThumbnailAsProjectImage,
+                  project.id ? detectedVideos[project.id] : undefined
+                );
+                const videoIdx = displayMedia.allMedia.findIndex(isVideoMedia);
 
                 // First project takes slightly larger span on large screens for an asymmetric bento layout
                 const isFeatured = i === 0 && projects.length > 1;
@@ -504,13 +572,40 @@ export default function ProjectsPage() {
                     )}
 
                     <div className="aspect-video bg-gray-100 dark:bg-white/5 relative overflow-hidden">
-                       {imagesList.length > 0 ? (
-                         <ImageViewer images={imagesList} label="Project">
-                           <img 
-                             src={imagesList[0]} 
-                             alt={project.title} 
-                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                           />
+                       {displayMedia.pictureUrl ? (
+                         <ImageViewer 
+                           images={displayMedia.allMedia} 
+                           label="Project"
+                           initialIndex={displayMedia.hasVideo && videoIdx >= 0 ? videoIdx : 0}
+                         >
+                           <div className="relative w-full h-full cursor-pointer overflow-hidden group">
+                             {displayMedia.isDirectVideo ? (
+                               <video 
+                                 src={`${displayMedia.pictureUrl}#t=0.001`} 
+                                 preload="metadata" 
+                                 muted 
+                                 playsInline 
+                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" 
+                               />
+                             ) : (
+                               <img 
+                                 src={displayMedia.pictureUrl} 
+                                 alt={project.title} 
+                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                               />
+                             )}
+                             {displayMedia.hasVideo && (
+                               <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white flex items-center gap-1.5 shadow-lg">
+                                 <Play className="w-3 h-3 fill-white text-white" />
+                                 <span className="text-[9px] font-mono font-bold uppercase tracking-wider">Video</span>
+                               </div>
+                             )}
+                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                               <div className="p-3 bg-black/70 rounded-full border border-white/20 scale-90 group-hover:scale-100 transition-all duration-300">
+                                 {displayMedia.hasVideo ? <Play className="w-5 h-5 text-blue-400 fill-blue-400 ml-0.5" /> : <Sparkles className="w-5 h-5 text-blue-400" />}
+                               </div>
+                             </div>
+                           </div>
                          </ImageViewer>
                        ) : (
                          <div className="w-full h-full flex items-center justify-center opacity-20">
@@ -549,8 +644,17 @@ export default function ProjectsPage() {
                       </div>
 
                       <div className="pt-4 flex flex-col space-y-4 border-t border-white/5">
-                        {imagesList.length > 0 && (
-                          <ImageViewer images={imagesList} label="Project" triggerText={language === 'en' ? 'Show Gallery' : 'عرض معرض الصور'} />
+                        {displayMedia.allMedia.length > 0 && (
+                          <ImageViewer 
+                            images={displayMedia.allMedia} 
+                            label="Project" 
+                            initialIndex={displayMedia.hasVideo && videoIdx >= 0 ? videoIdx : 0}
+                            triggerText={
+                              displayMedia.hasVideo
+                                ? (language === 'en' ? 'Watch Video & Gallery' : 'مشاهدة الفيديو والمعرض')
+                                : (language === 'en' ? 'Show Gallery' : 'عرض معرض الصور')
+                            } 
+                          />
                         )}
                         
                         <div className="flex items-center justify-between">

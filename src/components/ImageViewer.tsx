@@ -1,22 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ChevronLeft, ChevronRight, Eye, ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Eye, ZoomIn, ZoomOut, RotateCcw, Download, Play } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { isVideoMedia, extractVideoInfo } from '../lib/videoUtils';
 
 interface ImageViewerProps {
   images: string[];
   label: string;
   triggerText?: string;
   children?: React.ReactNode;
+  initialIndex?: number;
 }
 
-export default function ImageViewer({ images, label, triggerText, children }: ImageViewerProps) {
+export default function ImageViewer({ images, label, triggerText, children, initialIndex = 0 }: ImageViewerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
   const [zoomScale, setZoomScale] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const { language } = useLanguage();
+
+  const resolveTargetIndex = () => {
+    if (typeof initialIndex === 'number' && initialIndex >= 0 && initialIndex < images.length) {
+      return initialIndex;
+    }
+    const videoIdx = images.findIndex(isVideoMedia);
+    if (videoIdx !== -1) {
+      return videoIdx;
+    }
+    return 0;
+  };
+
+  const openViewer = () => {
+    setCurrentIndex(resolveTargetIndex());
+    setZoomScale(1);
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentIndex(resolveTargetIndex());
+    }
+  }, [isOpen, initialIndex, images]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -45,6 +70,11 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
 
   if (!images || images.length === 0) return null;
 
+  const currentMedia = images[currentIndex] || '';
+  const isPdf = currentMedia.toLowerCase().includes('.pdf') || currentMedia.toLowerCase().split('?')[0].endsWith('.pdf');
+  const isVideo = isVideoMedia(currentMedia);
+  const videoInfo = isVideo ? extractVideoInfo(currentMedia) : null;
+
   const next = () => setCurrentIndex((prev) => (prev + 1) % images.length);
   const prev = () => setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
 
@@ -55,15 +85,19 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
   return (
     <>
       {children ? (
-        <div onClick={() => setIsOpen(true)} className="cursor-pointer w-full h-full">
+        <div onClick={openViewer} className="cursor-pointer w-full h-full">
           {children}
         </div>
       ) : (
         <button 
-          onClick={() => setIsOpen(true)}
+          onClick={openViewer}
           className="flex items-center gap-2 text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/15 transition-all group mt-2"
         >
-          <Eye className="w-4 h-4 group-hover:scale-110 transition-transform text-blue-500" />
+          {images.some(isVideoMedia) ? (
+            <Play className="w-4 h-4 fill-blue-500 text-blue-500 group-hover:scale-110 transition-transform" />
+          ) : (
+            <Eye className="w-4 h-4 group-hover:scale-110 transition-transform text-blue-500" />
+          )}
           <span>{triggerText || `Show ${label}`}</span>
         </button>
       )}
@@ -92,7 +126,7 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
                 <X className="w-8 h-8 text-white" />
               </button>
 
-              {/* Main Interactive Zoom Panel Card (As big as CVViewer) */}
+              {/* Main Interactive Zoom Panel Card */}
               <motion.div 
                 initial={{ y: '100vh', opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -104,13 +138,18 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
                 <div className="flex justify-between items-center px-8 py-4 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02]">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500 mb-0.5">{label}</p>
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase">
-                      {(images[currentIndex]?.toLowerCase().includes('.pdf') || images[currentIndex]?.toLowerCase().split('?')[0].endsWith('.pdf')) ? 'Document' : 'Image'} {currentIndex + 1} of {images.length}
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase flex items-center gap-2">
+                      <span>{isPdf ? 'Document' : isVideo ? 'Video' : 'Image'} {currentIndex + 1} of {images.length}</span>
+                      {isVideo && (
+                        <span className="text-[9px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                          Video Stream
+                        </span>
+                      )}
                     </h4>
                   </div>
 
-                  {/* Zoom Controls */}
-                  {!((images[currentIndex]?.toLowerCase().includes('.pdf') || images[currentIndex]?.toLowerCase().split('?')[0].endsWith('.pdf'))) && (
+                  {/* Zoom Controls (only for images) */}
+                  {!isPdf && !isVideo && (
                     <div className="flex items-center bg-gray-100 dark:bg-white/5 rounded-full p-1 border border-gray-200 dark:border-white/10 space-x-1">
                       <button 
                         onClick={zoomOut}
@@ -141,7 +180,7 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
                 </div>
 
                 {/* If PDF and mobile, show the helper top bar */}
-                {(images[currentIndex]?.toLowerCase().includes('.pdf') || images[currentIndex]?.toLowerCase().split('?')[0].endsWith('.pdf')) && isMobile && (
+                {isPdf && isMobile && (
                   <div className="p-4 bg-[#1C1C1E] dark:bg-[#0c0c0e] border-b border-gray-200 dark:border-white/10 flex flex-col gap-3">
                     <div className="text-center">
                       <h3 className="text-sm font-bold text-white uppercase tracking-widest">
@@ -176,10 +215,10 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
                   </div>
                 )}
 
-                {/* Image Frame Body */}
-                <div className="flex-1 flex items-center justify-center overflow-auto p-8 bg-gray-50 dark:bg-black/40 relative">
+                {/* Media Frame Body */}
+                <div className="flex-1 flex items-center justify-center overflow-auto p-4 md:p-8 bg-gray-50 dark:bg-black/40 relative">
                   {/* Desktop controls overlay for PDF */}
-                  {(images[currentIndex]?.toLowerCase().includes('.pdf') || images[currentIndex]?.toLowerCase().split('?')[0].endsWith('.pdf')) && !isMobile && (
+                  {isPdf && !isMobile && (
                     <div className="absolute top-4 left-4 flex gap-2 z-10">
                       <a 
                         href={images[currentIndex]}
@@ -203,13 +242,13 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
                     </div>
                   )}
 
-                  {(images[currentIndex]?.toLowerCase().includes('.pdf') || images[currentIndex]?.toLowerCase().split('?')[0].endsWith('.pdf')) && !isMobile && (
+                  {isPdf && !isMobile && (
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/80 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/10 pointer-events-none">
                       Document Viewer
                     </div>
                   )}
 
-                  {(images[currentIndex]?.toLowerCase().includes('.pdf') || images[currentIndex]?.toLowerCase().split('?')[0].endsWith('.pdf')) ? (
+                  {isPdf ? (
                     <iframe
                       src={isMobile 
                         ? `https://docs.google.com/gview?url=${encodeURIComponent(images[currentIndex].startsWith('http') ? images[currentIndex] : `${window.location.origin}${images[currentIndex]}`)}&embedded=true`
@@ -218,6 +257,35 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
                       className="w-full h-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-xl bg-white dark:bg-zinc-900 border-none"
                       title={`${label} PDF - ${currentIndex + 1}`}
                     />
+                  ) : isVideo ? (
+                    videoInfo?.type === 'youtube' && videoInfo.embedUrl ? (
+                      <iframe
+                        src={`${videoInfo.embedUrl}?autoplay=1&rel=0`}
+                        className="w-full h-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-2xl bg-black border border-white/10"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={`${label} Video - ${currentIndex + 1}`}
+                      />
+                    ) : videoInfo?.type === 'vimeo' && videoInfo.embedUrl ? (
+                      <iframe
+                        src={`${videoInfo.embedUrl}?autoplay=1`}
+                        className="w-full h-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-2xl bg-black border border-white/10"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        title={`${label} Video - ${currentIndex + 1}`}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center p-2">
+                        <video
+                          key={currentMedia}
+                          src={currentMedia}
+                          controls
+                          autoPlay
+                          playsInline
+                          className="w-full h-full max-w-[95%] max-h-[75vh] object-contain rounded-2xl shadow-2xl bg-black border border-white/10"
+                        />
+                      </div>
+                    )
                   ) : (
                     <div 
                       className="transition-transform duration-200 ease-out flex items-center justify-center min-w-full min-h-full"
@@ -241,28 +309,36 @@ export default function ImageViewer({ images, label, triggerText, children }: Im
                       <button 
                         onClick={prev}
                         className="absolute left-6 top-1/2 -translate-y-1/2 p-4 bg-white/80 dark:bg-black/60 hover:bg-white dark:hover:bg-black/80 rounded-full transition-all border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white z-50 shadow-md"
+                        title="Previous item"
                       >
                         <ChevronLeft className="w-6 h-6" />
                       </button>
                       <button 
                         onClick={next}
                         className="absolute right-6 top-1/2 -translate-y-1/2 p-4 bg-white/80 dark:bg-black/60 hover:bg-white dark:hover:bg-black/80 rounded-full transition-all border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white z-50 shadow-md"
+                        title="Next item"
                       >
                         <ChevronRight className="w-6 h-6" />
                       </button>
 
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 bg-gray-950/80 backdrop-blur-md py-2 px-4 rounded-full z-50">
-                        {images.map((_, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setCurrentIndex(i)}
-                            className={`transition-all ${
-                              currentIndex === i 
-                                ? 'w-10 h-1.5 bg-blue-500 rounded-full' 
-                                : 'w-1.5 h-1.5 bg-white/40 rounded-full hover:bg-white/60'
-                            }`}
-                          />
-                        ))}
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center space-x-2 bg-gray-950/80 backdrop-blur-md py-2 px-4 rounded-full z-50">
+                        {images.map((img, i) => {
+                          const isV = isVideoMedia(img);
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => setCurrentIndex(i)}
+                              className={`transition-all flex items-center justify-center ${
+                                currentIndex === i 
+                                  ? 'w-10 h-2 bg-blue-500 rounded-full' 
+                                  : 'w-2 h-2 bg-white/40 rounded-full hover:bg-white/60'
+                              }`}
+                              title={`Item ${i + 1}${isV ? ' (Video)' : ''}`}
+                            >
+                              {isV && currentIndex === i && <Play className="w-2.5 h-2.5 text-white fill-white ml-0.5" />}
+                            </button>
+                          );
+                        })}
                       </div>
                     </>
                   )}

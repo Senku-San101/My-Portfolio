@@ -73,9 +73,13 @@ async function startServer() {
     },
   });
 
-  const upload = multer({ storage });
+  const upload = multer({ 
+    storage,
+    limits: { fileSize: 100 * 1024 * 1024 } // 100MB max file size for videos and high-res media
+  });
 
-  app.use(express.json());
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
   // Debug middleware for API routes
   app.use("/api/*", (req, res, next) => {
@@ -123,6 +127,45 @@ async function startServer() {
       const fileUrl = `/api/blobs/${file.filename}?v=${Date.now()}`;
       res.json({ url: fileUrl });
     });
+  });
+
+  // Project Video Detection Endpoints
+  app.get("/api/projects/detect-video/:projectId", (req, res) => {
+    try {
+      const { projectId } = req.params;
+      if (!projectId) return res.json({ videoUrl: null });
+      const files = fs.readdirSync(uploadDir);
+      // Find latest video matching this project
+      const matches = files.filter(f => f.startsWith(`projects_video_${projectId}_`)).sort().reverse();
+      if (matches.length > 0) {
+        return res.json({ videoUrl: `/api/blobs/${matches[0]}` });
+      }
+      return res.json({ videoUrl: null });
+    } catch (err: any) {
+      res.json({ videoUrl: null, error: err.message });
+    }
+  });
+
+  app.get("/api/projects/all-detected-videos", (req, res) => {
+    try {
+      const files = fs.readdirSync(uploadDir).sort().reverse();
+      const videoMap: Record<string, string> = {};
+      files.forEach(f => {
+        if (f.startsWith("projects_video_")) {
+          // Format: projects_video_<projectId>_<timestamp-random>.<ext>
+          const parts = f.split("_");
+          if (parts.length >= 3) {
+            const projId = parts[2];
+            if (projId && !videoMap[projId]) {
+              videoMap[projId] = `/api/blobs/${f}`;
+            }
+          }
+        }
+      });
+      res.json(videoMap);
+    } catch (err: any) {
+      res.json({});
+    }
   });
 
   app.get("/api/analytics/blobs", (req, res) => {

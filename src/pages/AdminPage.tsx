@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Plus, Trash2, Save, User, Briefcase, Award, FolderCode, Cog, ChevronRight, ChevronUp, ChevronDown, X, Image as ImageIcon, Loader2, ArrowLeft, Mail, Activity, BookOpen, Settings, Lock, Eye, Key, ShieldCheck, Brain, FileText, Upload, CheckCircle2, Cpu, Copy, Clock, Globe, Phone, MessageSquare, Linkedin, Github
+  Plus, Trash2, Save, User, Briefcase, Award, FolderCode, Cog, ChevronRight, ChevronUp, ChevronDown, X, Image as ImageIcon, Loader2, ArrowLeft, Mail, Activity, BookOpen, Settings, Lock, Eye, Key, ShieldCheck, Brain, FileText, Upload, CheckCircle2, Cpu, Copy, Clock, Globe, Phone, MessageSquare, Linkedin, Github, Video, Play
 } from 'lucide-react';
 import { 
   collection, query, orderBy, onSnapshot, 
@@ -13,6 +13,7 @@ import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { Experience, Project, Certificate, Skill, Profile, Message, Visit, Blog, AppSettings, Specialization, ContactMethod } from '../types';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { isVideoMedia, extractVideoInfo, captureVideoFrame, getProjectDisplayMedia } from '../lib/videoUtils';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'experience' | 'projects' | 'certificates' | 'skills' | 'specializations' | 'blogs' | 'contact' | 'settings' | 'messages' | 'analytics'>('profile');
@@ -811,13 +812,360 @@ function ExperienceEditor() {
   );
 }
 
+function ProjectVideoUpload({
+  videoUrl,
+  videoThumbnail,
+  onUpdateMedia,
+  projectId
+}: {
+  videoUrl: string;
+  videoThumbnail: string;
+  onUpdateMedia: (updates: { videoUrl?: string; videoThumbnail?: string }) => void;
+  projectId: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [urlInput, setUrlInput] = useState(videoUrl || '');
+
+  useEffect(() => {
+    setUrlInput(videoUrl || '');
+  }, [videoUrl]);
+
+  // Auto-detect previously uploaded video file on server if videoUrl is currently empty
+  useEffect(() => {
+    if (projectId && projectId !== 'new' && !videoUrl) {
+      fetch(`/api/projects/detect-video/${projectId}`)
+        .then(r => r.json())
+        .then(res => {
+          if (res?.videoUrl) {
+            setUrlInput(res.videoUrl);
+            onUpdateMedia({ videoUrl: res.videoUrl });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [projectId, videoUrl]);
+
+  const handleDeleteVideo = () => {
+    setUrlInput('');
+    onUpdateMedia({ videoUrl: '', videoThumbnail: '' });
+  };
+
+  const handleClearThumbnail = () => {
+    onUpdateMedia({ videoThumbnail: '' });
+  };
+
+  const handleClearUrlOnly = () => {
+    setUrlInput('');
+    onUpdateMedia({ videoUrl: '' });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setCapturing(true);
+
+    let thumbDataUrl = '';
+    try {
+      thumbDataUrl = await captureVideoFrame(file, 0.5);
+    } catch (err) {
+      console.warn('Frame capture failed:', err);
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const extension = file.name.split('.').pop();
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e4);
+      const targetFilename = `projects_video_${projectId}_${uniqueSuffix}.${extension}`;
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'x-target-filename': encodeURIComponent(targetFilename)
+        }
+      });
+
+      if (!response.ok) throw new Error('Video upload failed');
+      const data = await response.json();
+      setUrlInput(data.url);
+      onUpdateMedia({
+        videoUrl: data.url,
+        ...(thumbDataUrl ? { videoThumbnail: thumbDataUrl } : {})
+      });
+    } catch (err) {
+      console.error('Video upload error:', err);
+      alert('Failed to upload video.');
+    } finally {
+      setUploading(false);
+      setCapturing(false);
+    }
+  };
+
+  const handleUrlBlur = async () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) {
+      if (!videoUrl) {
+        onUpdateMedia({ videoUrl: '', videoThumbnail: '' });
+      }
+      return;
+    }
+    onUpdateMedia({ videoUrl: trimmed });
+
+    // If thumbnail is empty, extract/capture it automatically
+    if (!videoThumbnail) {
+      const yt = extractVideoInfo(trimmed);
+      if (yt.type === 'youtube' && yt.thumbnailUrl) {
+        onUpdateMedia({ videoUrl: trimmed, videoThumbnail: yt.thumbnailUrl });
+      } else if (isVideoMedia(trimmed)) {
+        setCapturing(true);
+        try {
+          const thumb = await captureVideoFrame(trimmed, 0.5);
+          if (thumb) onUpdateMedia({ videoUrl: trimmed, videoThumbnail: thumb });
+        } catch (err) {
+          console.warn('Could not extract thumbnail:', err);
+        } finally {
+          setCapturing(false);
+        }
+      }
+    }
+  };
+
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const extension = file.name.split('.').pop();
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e4);
+      const targetFilename = `projects_videothumb_${projectId}_${uniqueSuffix}.${extension}`;
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'x-target-filename': encodeURIComponent(targetFilename)
+        }
+      });
+
+      if (!response.ok) throw new Error('Thumbnail upload failed');
+      const data = await response.json();
+      onUpdateMedia({ videoThumbnail: data.url });
+    } catch (err) {
+      console.error('Upload thumbnail error:', err);
+      alert('Failed to upload thumbnail.');
+    }
+  };
+
+  const activeVideo = (videoUrl || urlInput || '').trim();
+  const videoInfo = activeVideo ? extractVideoInfo(activeVideo) : null;
+  const hasAnyVideoData = Boolean(activeVideo || videoThumbnail);
+
+  return (
+    <div className="space-y-4 p-5 rounded-2xl glass-sm border border-white/5 bg-white/[0.02]">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-bold uppercase tracking-widest text-blue-400 flex items-center gap-2">
+          <Video className="w-4 h-4" />
+          <span>Project Video & Thumbnail</span>
+        </label>
+        {hasAnyVideoData && (
+          <button
+            type="button"
+            onClick={handleDeleteVideo}
+            className="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-wider flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-all cursor-pointer shadow-sm"
+            title="Delete video and its thumbnail"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete Video
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Upload file or enter URL */}
+        <div className="space-y-3">
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">
+              Upload Video File (MP4, WebM, MOV)
+            </label>
+            <label className="flex items-center justify-center p-3 rounded-xl border border-dashed border-gray-300 dark:border-white/10 hover:border-blue-500/50 cursor-pointer bg-white/5 hover:bg-blue-500/5 transition-all text-xs font-bold text-gray-700 dark:text-gray-300">
+              <input
+                type="file"
+                accept="video/*,.mp4,.webm,.mov,.ogg,.m4v"
+                onChange={handleFileUpload}
+                className="hidden"
+                disabled={uploading}
+              />
+              {uploading ? (
+                <span className="flex items-center gap-2 text-blue-500">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Uploading Video...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-blue-500" />
+                  <span>{activeVideo ? 'Replace Video File' : 'Upload Video File'}</span>
+                </span>
+              )}
+            </label>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">
+              Or Video / YouTube / Vimeo URL
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="e.g. https://www.youtube.com/watch?v=... or direct mp4 url"
+                value={urlInput}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setUrlInput(val);
+                  onUpdateMedia({
+                    videoUrl: val.trim(),
+                    ...(!val.trim() && !videoThumbnail ? { videoThumbnail: '' } : {})
+                  });
+                }}
+                onBlur={handleUrlBlur}
+                className="w-full bg-white dark:bg-[#09090b] border border-gray-200 dark:border-white/5 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white outline-none focus:border-blue-500 font-mono"
+              />
+              {activeVideo && (
+                <button
+                  type="button"
+                  onClick={handleClearUrlOnly}
+                  className="p-2 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 flex-shrink-0 transition-colors"
+                  title="Clear Video URL"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Video Thumbnail Preview */}
+        <div className="space-y-3">
+          <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
+            Video Thumbnail Preview {capturing && '(Capturing frame...)'}
+          </label>
+          <div className="flex gap-4 items-center">
+            <div className="w-32 aspect-video rounded-xl overflow-hidden bg-black/40 border border-white/10 relative flex items-center justify-center flex-shrink-0">
+              {videoThumbnail ? (
+                <img src={videoThumbnail} alt="Video thumbnail" className="w-full h-full object-cover" />
+              ) : activeVideo && !videoInfo?.embedUrl ? (
+                <video src={`${activeVideo}#t=0.001`} preload="metadata" muted playsInline className="w-full h-full object-cover pointer-events-none" />
+              ) : (
+                <div className="flex flex-col items-center text-gray-500 text-[9px] uppercase font-mono">
+                  <Video className="w-5 h-5 mb-1 opacity-50" />
+                  <span>No Thumbnail</span>
+                </div>
+              )}
+              {activeVideo && (
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                  <Play className="w-4 h-4 text-white fill-white" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-white/10 hover:bg-white/10 cursor-pointer text-[10px] font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailUpload}
+                    className="hidden"
+                  />
+                  <ImageIcon className="w-3 h-3 text-blue-500" />
+                  <span>{videoThumbnail ? 'Change Thumbnail' : 'Upload Thumbnail'}</span>
+                </label>
+                {videoThumbnail && (
+                  <button
+                    type="button"
+                    onClick={handleClearThumbnail}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                    title="Remove Thumbnail only"
+                  >
+                    <Trash2 className="w-3 h-3" /> Clear Thumbnail
+                  </button>
+                )}
+              </div>
+              <p className="text-[9px] text-gray-500 leading-tight">
+                Used as the project picture when the video thumbnail setting is active in Settings.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Live Video Preview if URL exists */}
+      {activeVideo && (
+        <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <Eye className="w-3.5 h-3.5 text-blue-500" />
+              <span>Active Video Stream</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDeleteVideo}
+              className="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-wider flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete Video
+            </button>
+          </div>
+          <div className="aspect-video max-h-48 rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center relative shadow-lg">
+            {videoInfo?.type === 'youtube' && videoInfo.embedUrl ? (
+              <iframe
+                src={videoInfo.embedUrl}
+                className="w-full h-full border-none"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="Preview"
+              />
+            ) : videoInfo?.type === 'vimeo' && videoInfo.embedUrl ? (
+              <iframe
+                src={videoInfo.embedUrl}
+                className="w-full h-full border-none"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title="Preview"
+              />
+            ) : (
+              <video
+                src={activeVideo}
+                controls
+                className="w-full h-full max-h-48 object-contain"
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProjectEditor() {
   const [items, setItems] = useState<Project[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [editing, setEditing] = useState<Project | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'projects'), orderBy('order', 'asc'));
-    return onSnapshot(q, (s) => setItems(s.docs.map(d => ({id: d.id, ...d.data()} as Project))), (error) => handleFirestoreError(error, OperationType.GET, 'projects'));
+    const unsubProjects = onSnapshot(q, (s) => setItems(s.docs.map(d => ({id: d.id, ...d.data()} as Project))), (error) => handleFirestoreError(error, OperationType.GET, 'projects'));
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'config'), (s) => {
+      if (s.exists()) setSettings(s.data() as AppSettings);
+    });
+    return () => {
+      unsubProjects();
+      unsubSettings();
+    };
   }, []);
 
   const handleMove = async (index: number, direction: 'up' | 'down') => {
@@ -852,8 +1200,14 @@ function ProjectEditor() {
     e.preventDefault();
     if (!editing) return;
     const { id, ...data } = editing;
-    if (id) await updateDoc(doc(db, 'projects', id), data);
-    else await addDoc(collection(db, 'projects'), data);
+    const cleanData = {
+      ...data,
+      videoUrl: (editing.videoUrl || '').trim(),
+      videoThumbnail: (editing.videoThumbnail || '').trim(),
+      images: editing.images || [],
+    };
+    if (id) await updateDoc(doc(db, 'projects', id), cleanData);
+    else await addDoc(collection(db, 'projects'), cleanData);
     setEditing(null);
   };
 
@@ -861,25 +1215,28 @@ function ProjectEditor() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Projects</h2>
-        <button className="btn-secondary" onClick={() => setEditing({ title: '', description: '', technologies: [], order: items.length, images: [], inProgress: false })}>
+        <button className="btn-secondary" onClick={() => setEditing({ title: '', description: '', technologies: [], order: items.length, images: [], videoUrl: '', videoThumbnail: '', inProgress: false })}>
           <Plus className="w-5 h-5 mr-2" /> Add
         </button>
       </div>
       <div className="space-y-4">
-        {items.map((item, index) => (
-          <ListItem 
-            key={item.id} 
-            title={item.title} 
-            subtitle={item.technologies.join(', ') + (item.inProgress ? ' (In Progress)' : '')} 
-            imageUrl={item.images?.[0] || item.imageUrl} 
-            onEdit={() => setEditing(item)} 
-            onDelete={() => deleteDoc(doc(db, 'projects', item.id!))}
-            onMoveUp={() => handleMove(index, 'up')}
-            onMoveDown={() => handleMove(index, 'down')}
-            isFirst={index === 0}
-            isLast={index === items.length - 1}
-          />
-        ))}
+        {items.map((item, index) => {
+          const displayMedia = getProjectDisplayMedia(item, settings?.showVideoThumbnailAsProjectImage);
+          return (
+            <ListItem 
+              key={item.id} 
+              title={item.title} 
+              subtitle={item.technologies.join(', ') + (item.inProgress ? ' (In Progress)' : '') + (item.videoUrl ? ' • [Video Attached]' : '')} 
+              imageUrl={displayMedia.pictureUrl} 
+              onEdit={() => setEditing(item)} 
+              onDelete={() => deleteDoc(doc(db, 'projects', item.id!))}
+              onMoveUp={() => handleMove(index, 'up')}
+              onMoveDown={() => handleMove(index, 'down')}
+              isFirst={index === 0}
+              isLast={index === items.length - 1}
+            />
+          );
+        })}
       </div>
       {editing && (
         <Modal title="Edit Project" onClose={() => setEditing(null)} onSave={save}>
@@ -902,8 +1259,15 @@ function ProjectEditor() {
               </label>
             </div>
 
+            <ProjectVideoUpload 
+              videoUrl={editing.videoUrl || ''} 
+              videoThumbnail={editing.videoThumbnail || ''} 
+              onUpdateMedia={updates => setEditing(prev => prev ? ({ ...prev, ...updates }) : null)} 
+              projectId={editing.id || 'new'} 
+            />
+
             <MultiImageUpload 
-              label="Project Showcase Images" 
+              label="Project Showcase Media (Images & Gallery)" 
               images={editing.images || []}
               onChange={imgs => setEditing({...editing, images: imgs})}
               path="projects"
@@ -1235,10 +1599,32 @@ function AppSettingsEditor() {
                 checked={settings.maintenanceMode || false} 
                 onChange={e => setSettings({...settings, maintenanceMode: e.target.checked})}
                 className="w-5 h-5"
+                id="maintenance-mode-setting"
                />
-               <span className="text-sm font-bold">Safe Mode (Read Only)</span>
+               <label htmlFor="maintenance-mode-setting" className="text-sm font-bold cursor-pointer select-none">
+                 Safe Mode (Read Only)
+               </label>
             </div>
             <p className="text-[10px] text-gray-500 uppercase font-mono">Restricts write access to public forms.</p>
+
+            <div className="flex items-center space-x-4 p-4 glass-sm rounded-xl border border-blue-500/10 bg-blue-500/[0.02]">
+               <input 
+                type="checkbox" 
+                id="show-video-thumbnail-setting"
+                checked={settings.showVideoThumbnailAsProjectImage || false} 
+                onChange={e => setSettings({...settings, showVideoThumbnailAsProjectImage: e.target.checked})}
+                className="w-5 h-5 rounded border-white/10 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
+               />
+               <div>
+                 <label htmlFor="show-video-thumbnail-setting" className="text-sm font-bold cursor-pointer select-none flex items-center gap-1.5">
+                   <Video className="w-4 h-4 text-blue-400" />
+                   <span>Show Video Thumbnail as Project Picture</span>
+                 </label>
+                 <p className="text-[10px] text-gray-500 uppercase font-mono mt-0.5">
+                   When enabled, projects with a video will display the video thumbnail as their picture in project listings.
+                 </p>
+               </div>
+            </div>
           </div>
         </div>
 
@@ -1967,27 +2353,39 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {images.map((img, i) => {
           const isPdf = img.toLowerCase().includes('.pdf') || img.toLowerCase().split('?')[0].endsWith('.pdf');
+          const isVid = isVideoMedia(img);
           return (
-            <div key={i} className="relative aspect-video rounded-xl overflow-hidden glass-sm border border-white/10 group flex items-center justify-center">
+            <div key={i} className="relative aspect-video rounded-xl overflow-hidden glass-sm border border-white/10 group flex items-center justify-center bg-black/40">
               {isPdf ? (
                 <div className="flex flex-col items-center justify-center text-center p-4 w-full h-full bg-red-500/5 hover:bg-red-500/10 transition-colors">
                   <FileText className="w-8 h-8 text-red-500 mb-2 animate-pulse" />
                   <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate w-full px-2">PDF Document</span>
+                </div>
+              ) : isVid ? (
+                <div className="relative w-full h-full flex items-center justify-center bg-zinc-950">
+                  <video src={`${img}#t=0.001`} preload="metadata" muted playsInline className="w-full h-full object-cover pointer-events-none" />
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <Play className="w-5 h-5 text-white fill-white" />
+                  </div>
+                  <span className="absolute bottom-1.5 left-2 text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/70 text-blue-400 border border-white/10">
+                    Video
+                  </span>
                 </div>
               ) : (
                 <img src={img} alt="Gallery" className="w-full h-full object-cover" />
               )}
               <button 
                 onClick={(e) => { e.preventDefault(); removeImage(img); }} 
-                className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 right-1 p-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-full opacity-90 hover:opacity-100 shadow-md transition-all z-10 cursor-pointer"
+                title="Remove media"
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           );
         })}
         <label className="aspect-video rounded-xl border-2 border-dashed border-white/10 hover:border-blue-500/50 flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-blue-500/5 group">
-          <input type="file" accept="image/*,application/pdf" onChange={handleFileChange} className="hidden" />
+          <input type="file" accept="image/*,video/*,.mp4,.webm,.mov,.ogg,.m4v,application/pdf" onChange={handleFileChange} className="hidden" />
           {uploading ? (
             <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
           ) : (

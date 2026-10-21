@@ -57,6 +57,8 @@ export interface Project {
   technologies: string[];
   imageUrl?: string;
   images?: string[];
+  videoUrl?: string;
+  videoThumbnail?: string;
   link?: { url: string; text: string };
   githubLink?: string;
   order: number;
@@ -141,4 +143,5 @@ export interface AppSettings {
   socialTitle?: string;
   socialDescription?: string;
   socialImage?: string;
+  showVideoThumbnailAsProjectImage?: boolean;
 }
