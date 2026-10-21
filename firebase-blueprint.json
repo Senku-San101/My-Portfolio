@@ -1,0 +1,193 @@
+{
+  "entities": {
+    "profile": {
+      "title": "Profile",
+      "description": "General information about Abdulrahman",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "bio": { "type": "string" },
+        "cvUrl": { "type": "string" },
+        "location": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "linkedin": { "type": "string" },
+        "github": { "type": "string" },
+        "photoUrl": { "type": "string" }
+      },
+      "required": ["name", "title"]
+    },
+    "experience": {
+      "title": "Experience",
+      "description": "Work experience entries",
+      "type": "object",
+      "properties": {
+        "company": { "type": "string" },
+        "position": { "type": "string" },
+        "location": { "type": "string" },
+        "period": { "type": "string" },
+        "description": { "type": "string" },
+        "bullets": { "type": "array", "items": { "type": "string" } },
+        "imageUrl": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "order": { "type": "integer" }
+      },
+      "required": ["company", "position", "period"]
+    },
+    "certificate": {
+      "title": "Certificate",
+      "description": "Certifications and awards",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "issuer": { "type": "string" },
+        "date": { "type": "string" },
+        "credentialId": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "link": { "type": "string" },
+        "order": { "type": "integer" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "issuer"]
+    },
+    "project": {
+      "title": "Project",
+      "description": "Portfolio projects",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "technologies": { "type": "array", "items": { "type": "string" } },
+        "imageUrl": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "link": { "type": "string" },
+        "order": { "type": "integer" }
+      },
+      "required": ["title", "description"]
+    },
+    "blog": {
+      "title": "Blog",
+      "description": "Blog posts and articles",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["draft", "published"] }
+      },
+      "required": ["title", "content", "date"]
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "App-wide configurations",
+      "type": "object",
+      "properties": {
+        "chatBotInstructions": { "type": "string" },
+        "specializations": { "type": "array", "items": { "type": "string" } },
+        "experienceSubtitle": { "type": "string" },
+        "projectsSubtitle": { "type": "string" },
+        "certificatesSubtitle": { "type": "string" },
+        "skillsSubtitle": { "type": "string" },
+        "blogsSubtitle": { "type": "string" }
+      }
+    },
+    "specialization": {
+      "title": "Specialization",
+      "description": "Area of security/technical expertise",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "order": { "type": "integer" }
+      },
+      "required": ["title", "description"]
+    },
+    "skill": {
+      "title": "Skill",
+      "description": "Technical and soft skills",
+      "type": "object",
+      "properties": {
+        "category": { "type": "string" },
+        "name": { "type": "string" },
+        "level": { "type": "string" },
+        "order": { "type": "integer" }
+      },
+      "required": ["category", "name"]
+    },
+    "message": {
+      "title": "Message",
+      "description": "Contact form submissions",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["name", "email", "message", "timestamp"]
+    },
+    "visit": {
+      "title": "Visit",
+      "description": "Visitor session data",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "language": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "duration": { "type": "number" },
+        "path": { "type": "string" }
+      },
+      "required": ["sessionId", "startTime"]
+    }
+  },
+  "firestore": {
+    "profile/main": {
+      "schema": "profile",
+      "description": "The primary profile data"
+    },
+    "experiences/{experienceId}": {
+      "schema": "experience",
+      "description": "List of work experiences"
+    },
+    "certificates/{certificateId}": {
+      "schema": "certificate",
+      "description": "List of certificates"
+    },
+    "projects/{projectId}": {
+      "schema": "project",
+      "description": "List of projects"
+    },
+    "skills/{skillId}": {
+      "schema": "skill",
+      "description": "List of technical skills"
+    },
+    "messages/{messageId}": {
+      "schema": "message",
+      "description": "Contact messages from visitors"
+    },
+    "visits/{visitId}": {
+      "schema": "visit",
+      "description": "Visitor analytics data"
+    },
+    "blogs/{blogId}": {
+      "schema": "blog",
+      "description": "Blog posts"
+    },
+    "specializations/{specializationId}": {
+      "schema": "specialization",
+      "description": "Area of expertises and services on About Page"
+    },
+    "settings/config": {
+      "schema": "settings",
+      "description": "Global application configuration"
+    }
+  }
+}
