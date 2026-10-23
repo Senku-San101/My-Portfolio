@@ -167,17 +167,23 @@ export function getProjectDisplayMedia(
   );
 
   // Unified list of all media for the project viewer/gallery
+  // CRITICAL: Any video MUST always be placed FIRST at index 0 so that clicking
+  // the card thumbnail or "Watch Video" button opens the playable video immediately!
   const mediaList: string[] = [];
 
-  // When video is present:
+  // When rawVideo is present, it is always item #0
   if (rawVideo) {
-    // If showVideoThumbnail is active, prioritize video as item #0
-    if (showVideoThumbnail) {
-      mediaList.push(rawVideo);
-    }
+    mediaList.push(rawVideo);
   }
 
-  // Add project images
+  // Add any video files in rawImages upfront right after rawVideo
+  rawImages.forEach((m) => {
+    if (isVideoMedia(m) && !mediaList.includes(m)) {
+      mediaList.push(m);
+    }
+  });
+
+  // Then add the remaining screenshot images
   rawImages.forEach((m) => {
     if (!mediaList.includes(m)) mediaList.push(m);
   });
@@ -185,65 +191,39 @@ export function getProjectDisplayMedia(
     mediaList.push(rawImg);
   }
 
-  // If showVideoThumbnail was false or videoUrl not added yet, add rawVideo
-  if (rawVideo && !mediaList.includes(rawVideo)) {
-    mediaList.push(rawVideo);
-  }
-
-  // Note: We deliberately do NOT put rawThumb in mediaList if rawVideo exists,
-  // because rawThumb is a static cover picture, NOT a separate gallery slide!
   // Only if mediaList is completely empty and no video exists, include rawThumb as a fallback image:
   if (mediaList.length === 0 && rawThumb) {
     mediaList.push(rawThumb);
   }
 
-  // Determine the primary cover picture displayed on the project card/listing
+  // Determine the primary cover picture displayed on the project card/listing:
   let pictureUrl = '';
   let isVideo = false;
   let isDirectVideo = false;
 
-  if (showVideoThumbnail && (rawVideo || rawThumb)) {
-    if (rawThumb) {
-      pictureUrl = rawThumb;
+  // If a video thumbnail was provided or captured, use it as the preview picture on the card:
+  if (rawThumb) {
+    pictureUrl = rawThumb;
+    isVideo = hasVideo;
+    isDirectVideo = false;
+  } else if (rawVideo) {
+    const yt = extractVideoInfo(rawVideo);
+    if (yt.type === 'youtube' && yt.thumbnailUrl) {
+      pictureUrl = yt.thumbnailUrl;
       isVideo = true;
-      isDirectVideo = false;
-    } else if (rawVideo) {
-      const yt = extractVideoInfo(rawVideo);
-      if (yt.type === 'youtube' && yt.thumbnailUrl) {
-        pictureUrl = yt.thumbnailUrl;
-        isVideo = true;
-      } else {
-        pictureUrl = rawVideo;
-        isVideo = true;
-        isDirectVideo = true;
-      }
-    }
-  }
-
-  // Fallback to standard images if no video thumbnail was picked or setting is off
-  if (!pictureUrl) {
-    if (rawImages.length > 0) {
-      pictureUrl = rawImages[0];
-      isVideo = isVideoMedia(pictureUrl);
-      isDirectVideo = isVideo && !extractVideoInfo(pictureUrl).embedUrl;
-    } else if (rawImg) {
-      pictureUrl = rawImg;
-      isVideo = isVideoMedia(pictureUrl);
-      isDirectVideo = isVideo && !extractVideoInfo(pictureUrl).embedUrl;
-    } else if (rawThumb) {
-      pictureUrl = rawThumb;
+    } else {
+      pictureUrl = rawVideo;
       isVideo = true;
-    } else if (rawVideo) {
-      const yt = extractVideoInfo(rawVideo);
-      if (yt.thumbnailUrl) {
-        pictureUrl = yt.thumbnailUrl;
-        isVideo = true;
-      } else {
-        pictureUrl = rawVideo;
-        isVideo = true;
-        isDirectVideo = true;
-      }
+      isDirectVideo = true;
     }
+  } else if (rawImages.length > 0) {
+    pictureUrl = rawImages[0];
+    isVideo = isVideoMedia(pictureUrl);
+    isDirectVideo = isVideo && !extractVideoInfo(pictureUrl).embedUrl;
+  } else if (rawImg) {
+    pictureUrl = rawImg;
+    isVideo = isVideoMedia(pictureUrl);
+    isDirectVideo = isVideo && !extractVideoInfo(pictureUrl).embedUrl;
   }
 
   // Final fallback: if pictureUrl is still empty but mediaList has items

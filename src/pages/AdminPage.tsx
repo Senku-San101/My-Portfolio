@@ -864,6 +864,14 @@ function ProjectVideoUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check size limit: Netlify serverless functions enforce a 6MB payload limit
+    if (file.size > 5.8 * 1024 * 1024) {
+      alert(
+        `Video file size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds Netlify's 6MB serverless upload limit.\n\nFor larger videos, please upload to YouTube or Vimeo, or host the MP4 externally, and paste the URL in the field below!`
+      );
+      return;
+    }
+
     setUploading(true);
     setCapturing(true);
 
@@ -876,9 +884,11 @@ function ProjectVideoUpload({
 
     try {
       const formData = new FormData();
+      // Append under both 'video' and 'file' keys for maximum server & Netlify compatibility
       formData.append('video', file);
+      formData.append('file', file);
 
-      const extension = file.name.split('.').pop();
+      const extension = file.name.split('.').pop() || 'mp4';
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e4);
       const targetFilename = `projects_video_${projectId}_${uniqueSuffix}.${extension}`;
 
@@ -890,16 +900,32 @@ function ProjectVideoUpload({
         }
       });
 
-      if (!response.ok) throw new Error('Video upload failed');
+      if (!response.ok) {
+        let errMessage = `Upload failed with HTTP ${response.status}`;
+        try {
+          const errData = await response.json();
+          if (errData?.error) errMessage = errData.error;
+        } catch (_) {
+          try {
+            const text = await response.text();
+            if (text) errMessage = text.slice(0, 150);
+          } catch (_) {}
+        }
+        if (response.status === 413) {
+          errMessage = "File exceeds Netlify's 6MB upload limit. Please use a video URL instead.";
+        }
+        throw new Error(errMessage);
+      }
+
       const data = await response.json();
       setUrlInput(data.url);
       onUpdateMedia({
         videoUrl: data.url,
         ...(thumbDataUrl ? { videoThumbnail: thumbDataUrl } : {})
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Video upload error:', err);
-      alert('Failed to upload video.');
+      alert(err.message || 'Failed to upload video.');
     } finally {
       setUploading(false);
       setCapturing(false);
@@ -991,7 +1017,7 @@ function ProjectVideoUpload({
         <div className="space-y-3">
           <div>
             <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">
-              Upload Video File (MP4, WebM, MOV)
+              Upload Video File (MP4, WebM, MOV — Max 6MB for direct upload)
             </label>
             <label className="flex items-center justify-center p-3 rounded-xl border border-dashed border-gray-300 dark:border-white/10 hover:border-blue-500/50 cursor-pointer bg-white/5 hover:bg-blue-500/5 transition-all text-xs font-bold text-gray-700 dark:text-gray-300">
               <input

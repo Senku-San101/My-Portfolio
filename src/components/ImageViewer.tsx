@@ -13,23 +13,29 @@ interface ImageViewerProps {
   initialIndex?: number;
 }
 
-export default function ImageViewer({ images, label, triggerText, children, initialIndex = 0 }: ImageViewerProps) {
+export default function ImageViewer({ images, label, triggerText, children, initialIndex }: ImageViewerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
   const [zoomScale, setZoomScale] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const { language } = useLanguage();
 
   const resolveTargetIndex = () => {
+    const videoIdx = images.findIndex(isVideoMedia);
+    // If a video exists in the gallery, ALWAYS prioritize playing the video first
+    // when clicked from the project card or "Watch Video" trigger!
+    if (videoIdx !== -1) {
+      if (typeof initialIndex === 'number' && initialIndex > 0 && initialIndex < images.length) {
+        return initialIndex;
+      }
+      return videoIdx;
+    }
     if (typeof initialIndex === 'number' && initialIndex >= 0 && initialIndex < images.length) {
       return initialIndex;
     }
-    const videoIdx = images.findIndex(isVideoMedia);
-    if (videoIdx !== -1) {
-      return videoIdx;
-    }
     return 0;
   };
+
+  const [currentIndex, setCurrentIndex] = useState(() => resolveTargetIndex());
 
   const openViewer = () => {
     setCurrentIndex(resolveTargetIndex());

@@ -7,48 +7,102 @@ export default async (req: Request) => {
 
   try {
     const formData = await req.formData();
-    const file = (formData.get("image") || formData.get("file")) as File;
-    const targetFilename = req.headers.get("x-target-filename");
+    
+    // Support all possible media field names: 'video', 'file', 'image', 'media'
+    let file = (
+      formData.get("video") ||
+      formData.get("file") ||
+      formData.get("image") ||
+      formData.get("media")
+    ) as File | null;
+
+    // Fallback: loop through all formData entries to find the uploaded File
+    if (!file || typeof file === "string" || !file.name) {
+      for (const [_, val] of formData.entries()) {
+        if (val && typeof val === "object" && "name" in val && "arrayBuffer" in val) {
+          file = val as File;
+          break;
+        }
+      }
+    }
 
     if (!file) {
-      return new Response(JSON.stringify({ error: "No file scanned/uploaded" }), { 
+      return new Response(JSON.stringify({ error: "No file found in request form data." }), { 
         status: 400,
         headers: { "Content-Type": "application/json" }
       });
     }
 
-    // Connect to the 'uploads' store
+    // Extract and decode target filename header if provided
+    let targetFilename = req.headers.get("x-target-filename") || undefined;
+    if (targetFilename) {
+      try {
+        targetFilename = decodeURIComponent(targetFilename);
+      } catch (e) {
+        // Keep raw string if decode fails
+      }
+    }
+
+    // Connect to the 'uploads' Netlify Blobs store
     const store = getStore("uploads");
     
-    // Determine the filename
-    const filename = targetFilename || `${Date.now()}-${file.name}`;
-    
-    // Store the binary data
-    await store.set(filename, await file.arrayBuffer(), {
+    // Determine the safe storage key
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
+    const filename = targetFilename || `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.name}`;
+
+    // Determine correct content type with fallback
+    let contentType = file.type;
+    if (!contentType || contentType === "application/octet-stream") {
+      if (extension === "mp4") contentType = "video/mp4";
+      else if (extension === "webm") contentType = "video/webm";
+      else if (extension === "mov") contentType = "video/quicktime";
+      else if (extension === "ogg") contentType = "video/ogg";
+      else if (extension === "m4v") contentType = "video/x-m4v";
+      else if (extension === "mkv") contentType = "video/x-matroska";
+      else if (extension === "png") contentType = "image/png";
+      else if (extension === "jpg" || extension === "jpeg") contentType = "image/jpeg";
+      else if (extension === "pdf") contentType = "application/pdf";
+      else contentType = "application/octet-stream";
+    }
+
+    // If target filename was provided, prune any older files with matching prefix to avoid clutter
+    if (targetFilename) {
+      try {
+        const prefix = targetFilename.split('.')[0];
+        const list = await store.list({ prefix });
+        for (const blob of list.blobs) {
+          if (blob.key !== filename) {
+            await store.delete(blob.key);
+          }
+        }
+      } catch (pruneErr) {
+        console.warn("Prune older blobs warning:", pruneErr);
+      }
+    }
+
+    // Store binary data in Netlify Blobs
+    const buffer = await file.arrayBuffer();
+    await store.set(filename, buffer, {
       metadata: {
-        contentType: file.type,
-        originalName: file.name
+        contentType,
+        originalName: file.name,
+        size: buffer.byteLength,
+        uploadedAt: new Date().toISOString()
       }
     });
 
-    // In a real Netlify environment, once a file is in Blobs, 
-    // you can serve it via a function or a specialized URL.
-    // To make it "publicly accessible" as the user requested, 
-    // we return a URL that we will later configure in netlify.toml 
-    // to be served by another function or a direct blob access if available.
-    
-    // However, for Netlify Blobs to be truly public like a CDN, 
-    // we often use a proxy function.
-    // Return path that the client can use, with a timestamp to bust the browser cache on change
-    const url = `/api/blobs/${filename}?v=${Date.now()}`;
+    // Return the public blob URL with cache-busting timestamp
+    const url = `/api/blobs/${encodeURIComponent(filename)}?v=${Date.now()}`;
 
-    return new Response(JSON.stringify({ url }), {
+    return new Response(JSON.stringify({ url, filename }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    console.error("Upload error:", error);
-    return new Response(JSON.stringify({ error: error.message || "Upload failed" }), { 
+    console.error("Netlify Blobs upload error:", error);
+    return new Response(JSON.stringify({ 
+      error: error.message || "Failed to process media upload in Netlify function." 
+    }), { 
       status: 500, 
       headers: { "Content-Type": "application/json" }
     });

@@ -28,6 +28,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/projects/all-detected-videos"
+  to = "/.netlify/functions/all-detected-videos"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

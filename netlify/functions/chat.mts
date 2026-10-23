@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { buildChatSystemInstruction } from "../../src/lib/abdulrahmanKnowledge";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY!,
@@ -15,44 +16,55 @@ export default async (req: Request) => {
   }
 
   try {
-    const { message, history, profileData, customInstructions } = await req.json();
-    
-    const baseInstruction = `
-You are a helpful AI assistant representing ${profileData?.name || 'Abdulrahman Kamal'}, a professional in Cybersecurity and Technology (SOC Analysis, Digital Forensics, Linux Engineering).
-Your goal is to answer questions from visitors about their professional background, skills, projects, and custom service offerings.
+    const { message, history, customInstructions, geminiApiKey } = await req.json();
 
-About ${profileData?.name || 'Abdulrahman Kamal'}:
-- Title: ${profileData?.title || 'Cybersecurity Engineer'}
-- Bio: ${profileData?.bio || 'Cybersecurity Engineer focused on SOC, Forensics, and Linux.'}
-- Contact Location: ${profileData?.location || 'Yemen'}
-- Email: ${profileData?.email || ''}
+    let activeAi = ai;
+    if (geminiApiKey && typeof geminiApiKey === "string" && geminiApiKey.trim() !== "") {
+      activeAi = new GoogleGenAI({
+        apiKey: geminiApiKey.trim(),
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+    }
 
-Core Directives:
-1. Be professional, polite, and helpful.
-2. Keep your answers concise, informative, and relevant.
-3. If asked about something not in the profile or relevant context, suggest they contact the owner via the contact form on the About page.
-`;
+    const systemInstruction = buildChatSystemInstruction(customInstructions);
+    const candidateModels = ["gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"];
+    let resultText: string | null = null;
+    let lastError: any = null;
 
-    const systemInstruction = customInstructions 
-      ? `${baseInstruction}\n\nAdditional Operational Guidelines and Context from Abdulrahman (Crucial - Must Obey):\n${customInstructions}`
-      : `${baseInstruction}\n\n4. Use a professional, slightly technical yet accessible tone.`;
+    for (const modelName of candidateModels) {
+      try {
+        const chat = activeAi.chats.create({
+          model: modelName,
+          config: {
+            systemInstruction: systemInstruction,
+          },
+          history: history || [],
+        });
+        const result = await chat.sendMessage({ message });
+        if (result && result.text) {
+          resultText = result.text;
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`[Netlify Chat] ${modelName} issue:`, err.message);
+        lastError = err;
+      }
+    }
 
-    const chat = ai.chats.create({
-      model: "gemini-3-flash-preview",
-      config: {
-        systemInstruction: systemInstruction,
-      },
-      history: history || [],
-    });
+    if (resultText) {
+      return new Response(JSON.stringify({ text: resultText }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-    const result = await chat.sendMessage({ message });
-    
-    return new Response(JSON.stringify({ text: result.text }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    throw lastError || new Error("All model candidates failed");
   } catch (error: any) {
-    console.error("Gemini Chat Error:", error);
+    console.error("Netlify Gemini Chat Error:", error);
     return new Response(JSON.stringify({ error: "Failed to generate response", message: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" }

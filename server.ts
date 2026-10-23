@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import multer from "multer";
 import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
+import { buildChatSystemInstruction } from "./src/lib/abdulrahmanKnowledge";
 
 // Safe __dirname and __filename for both ESM and CJS bundling
 const __appFilename = typeof __filename !== "undefined" ? __filename : process.cwd();
@@ -92,17 +93,49 @@ async function startServer() {
   });
 
   // Serve uploads directory - try both persistent and fallback
-  // This must be BEFORE Vite middleware
+  // Serve uploads directory - try both persistent and fallback
   app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
   app.use("/uploads", (req, res, next) => {
-    // Also try the active uploadDir which might be /tmp
     express.static(uploadDir)(req, res, next);
   });
   
-  // Alias /api/blobs to /uploads for local development consistency with Netlify Blobs setup
+  // Local static serving for /api/blobs
   app.use("/api/blobs", express.static(path.join(process.cwd(), "public", "uploads")));
-  app.use("/api/blobs", (req, res, next) => {
-    express.static(uploadDir)(req, res, next);
+  app.use("/api/blobs", express.static(uploadDir));
+
+  // Dynamic fallback proxy for /api/blobs: if missing locally, fetch from live Netlify site and cache
+  app.get("/api/blobs/:blobName", async (req, res, next) => {
+    try {
+      const blobName = req.params.blobName?.split("?")[0];
+      if (!blobName) return next();
+
+      const localPath = path.join(uploadDir, blobName);
+      const pubPath = path.join(process.cwd(), "public", "uploads", blobName);
+
+      if (fs.existsSync(localPath)) return res.sendFile(localPath);
+      if (fs.existsSync(pubPath)) return res.sendFile(pubPath);
+
+      // Fetch from live Netlify site
+      const remoteUrl = `https://abdulrahmankamal.netlify.app/api/blobs/${encodeURIComponent(blobName)}`;
+      const remoteRes = await fetch(remoteUrl);
+      if (remoteRes.ok) {
+        const buffer = Buffer.from(await remoteRes.arrayBuffer());
+        try {
+          fs.writeFileSync(localPath, buffer);
+          if (localPath !== pubPath) {
+            fs.writeFileSync(pubPath, buffer);
+          }
+        } catch (writeErr) {
+          console.warn("[Blob Cache] Could not write local cache:", writeErr);
+        }
+        const contentType = remoteRes.headers.get("content-type") || "application/octet-stream";
+        res.setHeader("Content-Type", contentType);
+        return res.send(buffer);
+      }
+    } catch (err) {
+      console.warn("[Blob Proxy] Error proxying blob:", err);
+    }
+    next();
   });
 
   // API Route for uploading images and files
@@ -283,36 +316,39 @@ async function startServer() {
         console.log("[Chat Route] Using default system-wide Gemini API Key");
       }
       
-      const baseInstruction = `
-You are a helpful AI assistant representing ${profileData?.name || 'Abdulrahman Kamal'}, a professional in Cybersecurity and Technology (SOC Analysis, Digital Forensics, Linux Engineering).
-Your goal is to answer questions from visitors about their professional background, skills, projects, and custom service offerings.
+      // Generate the complete, encyclopedic knowledge prompt covering Abdulrahman's CV, projects, blogs, credentials & grilling mode
+      const systemInstruction = buildChatSystemInstruction(customInstructions);
 
-About ${profileData?.name || 'Abdulrahman Kamal'}:
-- Title: ${profileData?.title || 'Cybersecurity Engineer'}
-- Bio: ${profileData?.bio || 'Cybersecurity Engineer focused on SOC, Forensics, and Linux.'}
-- Contact Location: ${profileData?.location || 'Yemen'}
-- Email: ${profileData?.email || ''}
+      // Model fallback pipeline with gemini-3.1-flash-lite first for lightning-fast, high-availability responses
+      const candidateModels = ["gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"];
+      let resultText: string | null = null;
+      let lastError: any = null;
 
-Core Directives:
-1. Be professional, polite, and helpful.
-2. Keep your answers concise, informative, and relevant.
-3. If asked about something not in the profile or relevant context, suggest they contact the owner via the contact form on the About page.
-`;
+      for (const modelName of candidateModels) {
+        try {
+          const chat = activeAi.chats.create({
+            model: modelName,
+            config: {
+              systemInstruction: systemInstruction,
+            },
+            history: history || [],
+          });
+          const result = await chat.sendMessage({ message });
+          if (result && result.text) {
+            resultText = result.text;
+            break;
+          }
+        } catch (err: any) {
+          console.warn(`[Chat Route] Model ${modelName} transient issue, trying next:`, err.message);
+          lastError = err;
+        }
+      }
 
-      const systemInstruction = customInstructions 
-        ? `${baseInstruction}\n\nAdditional Operational Guidelines and Context from Abdulrahman (Crucial - Must Obey):\n${customInstructions}`
-        : `${baseInstruction}\n\n4. Use a professional, slightly technical yet accessible tone.`;
+      if (resultText) {
+        return res.json({ text: resultText });
+      }
 
-      const chat = activeAi.chats.create({
-        model: "gemini-3-flash-preview",
-        config: {
-          systemInstruction: systemInstruction,
-        },
-        history: history || [],
-      });
-
-      const result = await chat.sendMessage({ message });
-      res.json({ text: result.text });
+      throw lastError || new Error("Failed to generate response from all available model endpoints");
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);
       res.status(500).json({ error: "Failed to generate response", message: error.message });

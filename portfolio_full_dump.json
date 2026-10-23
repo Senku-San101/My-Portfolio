@@ -1,0 +1,695 @@
+{
+  "profile": {
+    "bio": "",
+    "phone": "",
+    "email": "abdulrahmankamal609@gmail.com",
+    "name": "Abdulrahman Kamal",
+    "cvUrl": "/api/blobs/Abdulrahman_Kamal_CV.pdf?v=1787202976588",
+    "photoUrl": "/api/blobs/profile_main.jpg?v=1782343793080",
+    "github": "https://github.com/Senku-San101",
+    "title": "Cybersecurity Engineer",
+    "specializations": [],
+    "linkedin": "https://www.linkedin.com/in/abdulrahman-kamal",
+    "location": ""
+  },
+  "settings": {
+    "socialImage": "/api/blobs/settings_config_preview.jpg?v=1784560247571",
+    "skillsFooterNotice": "",
+    "specializations": [],
+    "mobilePrimaryNav": [
+      "about",
+      "certificates",
+      "projects",
+      "experience"
+    ],
+    "maintenanceMode": false,
+    "maintenanceMessage": "",
+    "socialDescription": "The best portfolio 👌🏻",
+    "chatBotInstructions": "اذا جا لك شخص يقول انا فواز قله ها اتحنجلت ولا عادك؟",
+    "desktopNavOrder": [
+      "about",
+      "projects",
+      "certificates",
+      "experience",
+      "blog",
+      "skills",
+      "contact"
+    ],
+    "mobileSecondaryNav": [
+      "blog",
+      "skills",
+      "contact"
+    ]
+  },
+  "experiences": [
+    {
+      "id": "LwSziM7SEpXWWkRd9dOc",
+      "description": "",
+      "company": "Tamkeen Bank for Microfinance",
+      "order": 0,
+      "images": [
+        "/api/blobs/experiences_new_1792409477947-188605864.jpg?v=1792409484776"
+      ],
+      "position": "Cybersecurity Specialist Intern",
+      "period": "1 Month",
+      "location": "On-Site",
+      "bullets": [
+        "Risk Management",
+        "Information Technology & Infrastructure",
+        "Security assessments"
+      ]
+    },
+    {
+      "id": "YGiz4yn9nXrf54v6HugU",
+      "period": "12 April - 2 May, 2026",
+      "order": 1,
+      "bullets": [
+        "Web Application Penetration Testing – Practical execution of OWASP Top 10 attacks (SQLi, XSS, CSRF, etc.) on live test environments.",
+        "Practical Exploitation – Identifying, exploiting, and chaining vulnerabilities to gain initial access on target systems.",
+        "Post-Exploitation & Privilege Escalation – Techniques for maintaining access, enumerating internal networks, and escalating privileges on compromised machines.",
+        "Technical Report Writing – Structured documentation of attack vectors, step-by-step exploitation chains, and remediation suggestions for 2 distinct vulnerable machines."
+      ],
+      "location": "Virtual, Kingdom of Saudi Arabia",
+      "position": "Ethical Hacker",
+      "company": "Newtek Camp",
+      "description": "",
+      "images": [
+        "/api/blobs/experiences_YGiz4yn9nXrf54v6HugU_1782722515539-872232820.png?v=1782722519116",
+        "/api/blobs/experiences_YGiz4yn9nXrf54v6HugU_1782729798713-637869801.pdf?v=1782729844876",
+        "/api/blobs/experiences_YGiz4yn9nXrf54v6HugU_1782729855914-419395845.pdf?v=1782729872485"
+      ]
+    },
+    {
+      "id": "rbfX8zG9ST6C5rxE3sa9",
+      "company": "Al-Aidaroos Solar",
+      "period": "September 2024 – May 2025",
+      "order": 1,
+      "description": "",
+      "bullets": [
+        "Conducted network security monitoring (NSM) across company infrastructure, identifying and remediating vulnerabilities — achieving a 70% reduction in potential security incidents.",
+        "Redesigned the full network architecture and reconfigured local servers, improving system performance and scalability by 50%.",
+        "Tuned performance across 8+ PCs, achieving an 80% improvement in processing speed and eliminating persistent latency.",
+        "Deployed an authentication-based internet access portal with IT-controlled allowlisting, enforcing user accountability and cutting organizational bandwidth waste by 60%.",
+        "Automated weekly server shutdown cycles, eliminating manual intervention during weekends.",
+        "Optimized network configurations and security controls, contributing to a 20% improvement in overall network performance and usability."
+      ],
+      "position": "IT Manager",
+      "images": [
+        "/api/blobs/experiences_rbfX8zG9ST6C5rxE3sa9_1782722035660-29365160.jpg?v=1782722037953"
+      ],
+      "location": "Aden, Yemen"
+    }
+  ],
+  "projects": [
+    {
+      "id": "4Zpq2oWXvyewdrrt9lGy",
+      "inProgress": false,
+      "technologies": [],
+      "order": 2,
+      "githubLink": "https://github.com/Senku-San101/IP-helper",
+      "images": [
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160255441-798948270.jpg?v=1784160326353",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160271214-24654893.png?v=1784160338324",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160276928-807744558.png?v=1784160343063",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160281547-624578990.png?v=1784160347758",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160286459-44121773.png?v=1784160352427",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160291898-302516580.png?v=1784160358311",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160297899-487422527.png?v=1784160364463",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160311965-547842314.png?v=1784160377669",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160318365-471250126.png?v=1784160385371",
+        "/api/blobs/projects_4Zpq2oWXvyewdrrt9lGy_1784160325263-908971945.png?v=1784160391286"
+      ],
+      "title": "IP-Helper",
+      "description": " Linux Network Configuration TUI, all in one tool to manage network interfaces and links using baked in kernel \"ip\" command"
+    },
+    {
+      "id": "FduJXZBXpWOPI9HFXndc",
+      "technologies": [],
+      "githubLink": "https://github.com/Senku-San101/Misbar-Demo",
+      "images": [
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784157973842-81212596.jpg?v=1784158043240",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158005015-461308092.png?v=1784158071405",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158010324-272256831.png?v=1784158083697",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158022314-781500547.png?v=1784158092758",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158055599-586035655.png?v=1784158122721",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158068980-460659397.png?v=1784158137156",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158100433-895649827.png?v=1784158169106",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158109621-907694753.png?v=1784158179024",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158128337-297420263.png?v=1784158196172",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158140964-932522915.png?v=1784158210841",
+        "/api/blobs/projects_FduJXZBXpWOPI9HFXndc_1784158150263-213301748.png?v=1784158217625"
+      ],
+      "order": 0,
+      "inProgress": false,
+      "description": "Misbar is a powerful, browser-native security testing extension designed for penetration testers, bug bounty hunters, and security researchers. Integrating directly into your browser's Developer Tools, Misbar provides a lightweight and immediate interface to intercept, modify, replay, and manipulate HTTP requests, removing the need to switch between external proxy tools like Burp Suite or ZAP during active testing.                                                                   This is only the Free version. Paid version includes 25+ advanced features, including AI assisstant, Crawling, Interceptor Breakpoints, and much more... To get it, get in touch with me through my links or the website mail in here",
+      "title": "Misbar - مِسْبار"
+    },
+    {
+      "id": "bcH6aFRWE7H9hzkA0wOo",
+      "inProgress": false,
+      "images": [
+        "/api/blobs/projects_bcH6aFRWE7H9hzkA0wOo_1783996518442-650047152.jpg?v=1783996522336",
+        "/api/blobs/projects_bcH6aFRWE7H9hzkA0wOo_1783996565485-466926316.png?v=1783996569075",
+        "/api/blobs/projects_bcH6aFRWE7H9hzkA0wOo_1783996715643-793956029.jpg?v=1783996716686",
+        "/api/blobs/projects_bcH6aFRWE7H9hzkA0wOo_1783996724153-4105057.png?v=1783996725667",
+        "/api/blobs/projects_bcH6aFRWE7H9hzkA0wOo_1783996740526-778870579.png?v=1783996742431",
+        "/api/blobs/projects_bcH6aFRWE7H9hzkA0wOo_1784159891954-65196473.png?v=1784159958840"
+      ],
+      "description": "✨🔁 The RIGHT text – محاذاة النصوص من اليمين لليسار (RTL) لردود الذكاء الاصطناعي. يدعم Claude و ChatGPT و Gemini و DeepSeek. 🌙 واجهة داكنة مع تأثير نيون. 🚫 لا يجمع أي بيانات.",
+      "title": "The-RIGHT-Text",
+      "order": 3,
+      "technologies": [],
+      "githubLink": "https://github.com/Senku-San101/The-RIGHT-Text"
+    },
+    {
+      "id": "zGvfyG8jt2WBPkzI1DDw",
+      "githubLink": "https://github.com/Senku-San101/Hardened-P2P-Chat",
+      "images": [
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160146689-949675242.jpg?v=1784160217739",
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160168365-235852860.png?v=1784160234766",
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160173069-928818407.png?v=1784160239560",
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160190823-893216411.png?v=1784160257349",
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160196342-201260616.png?v=1784160263400",
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160201250-612761027.png?v=1784160266648",
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160205200-709264336.png?v=1784160270541",
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160210485-956300277.png?v=1784160275839",
+        "/api/blobs/projects_zGvfyG8jt2WBPkzI1DDw_1784160217214-3919169.png?v=1784160282575"
+      ],
+      "order": 1,
+      "technologies": [],
+      "title": "Hardened P2P Chat",
+      "description": "I built a Debian-native, P2P encrypted chat that hides content, destination, and the fact that Tor is being used. To an observer, it looks like a normal video/voice call. Two people who exchange a small data bundle over a trusted side channel can hold a forward-secret, deniable conversation—DPI-resistant and hard to attribute, even for a state-level passive observer.",
+      "inProgress": false
+    }
+  ],
+  "certificates": [
+    {
+      "id": "0ZXl9OK2pgT9nnJJ5Uhb",
+      "images": [],
+      "issuer": "Vibe Security",
+      "description": "",
+      "order": 26,
+      "inProgress": true,
+      "date": "",
+      "worth": 0,
+      "name": "Junior DevOps Engineer"
+    },
+    {
+      "id": "502BwhxN0lLYYIk2Pu9U",
+      "worth": 9,
+      "inProgress": true,
+      "date": "",
+      "description": "",
+      "order": 18,
+      "issuer": "CyberWarFare Labs",
+      "name": "Red Team Analyst (CRTA)",
+      "images": [
+        "/api/blobs/certificates_new_1784659885511-34417308.png?v=1784659899375"
+      ]
+    },
+    {
+      "id": "9QMuflOGOpH1ngtMsmZo",
+      "order": 1,
+      "images": [
+        "/api/blobs/certificates_9QMuflOGOpH1ngtMsmZo_1782449007204-137941722.png?v=1782449072543",
+        "/api/blobs/certificates_9QMuflOGOpH1ngtMsmZo_1782449021672-286198856.png?v=1782449086971"
+      ],
+      "inProgress": false,
+      "worth": 50,
+      "issuer": "Vibe Security",
+      "link": {
+        "text": "Verify it",
+        "url": "https://vibsecurity.com/verify-certificate?id=VS-JGRC-CERT726400"
+      },
+      "date": "8 April, 2026",
+      "name": "Junior GRC Analyst (JGRC)",
+      "credentialId": "VS-JGRC-CERT726400"
+    },
+    {
+      "id": "Fi2WtO55bJQKGJt1HlgN",
+      "inProgress": true,
+      "date": "",
+      "issuer": "Red Team Leaders",
+      "images": [],
+      "name": "Certified LLM Security Expert (CLLMSE)",
+      "worth": 0,
+      "order": 28,
+      "description": ""
+    },
+    {
+      "id": "G3w0Xk7P6nCfTZHbekfE",
+      "name": "Network Fundementals Camp",
+      "worth": 0,
+      "inProgress": false,
+      "issuer": "Hisn Cyber",
+      "date": "13 July, 2026",
+      "images": [
+        "/api/blobs/certificates_new_1784698703101-472785399.jpg?v=1784698709031"
+      ],
+      "description": "",
+      "order": 21
+    },
+    {
+      "id": "GTfVdmzUe2qoIYUck2oP",
+      "credentialId": "30746012a4a59614",
+      "inProgress": false,
+      "date": "17 June, 2026",
+      "link": {
+        "text": "Verify",
+        "url": "https://courses.redteamleaders.com/exam-completion/30746012a4a59614"
+      },
+      "order": 6,
+      "worth": 0,
+      "images": [
+        "/api/blobs/certificates_GTfVdmzUe2qoIYUck2oP_1782449241134-653138178.png?v=1782449299054"
+      ],
+      "name": "Certified LLM Security Professional (CLLMSP)",
+      "issuer": "Red Team Leaders"
+    },
+    {
+      "id": "GgOdOWWyFhZ8owwUfbhA",
+      "name": "Junior SOC Analyst",
+      "worth": 0,
+      "date": "",
+      "order": 24,
+      "description": "",
+      "issuer": "Vibe Security",
+      "inProgress": true,
+      "images": []
+    },
+    {
+      "id": "IIZENBLbG5nz6ddnupxn",
+      "order": 13,
+      "inProgress": false,
+      "images": [
+        "/api/blobs/certificates_IIZENBLbG5nz6ddnupxn_1782449373194-638646878.png?v=1782449430334"
+      ],
+      "worth": 0,
+      "issuer": "Datacom (by Forage)",
+      "description": "I just completed Datacom's Introduction to Cloud on Forage. In the simulation I:\n * Completed a simulation focussed on understanding the DevOps engineering role\n   at Datacom\n * Registered an application on the cloud for a hypothetical client, WCD Bank \n * Created a GitHub Action workflow",
+      "link": {
+        "text": "Verify",
+        "url": "https://www.theforage.com/completion-certificates/gCW7Xki5Y3vNpBmnn/qsuRRyXDZ7Dj2QFx4_gCW7Xki5Y3vNpBmnn_69c72f16dddc9e6b1c8d8b49_1780036973535_completion_certificate.pdf"
+      },
+      "date": "29 May, 2026",
+      "name": "Introduction to Cloud Job Simulation",
+      "credentialId": "Cduoiwp3TAgjNYoYB"
+    },
+    {
+      "id": "J7dQe0hzyWEReESnPaHE",
+      "worth": 0,
+      "date": "",
+      "issuer": "Hackviser",
+      "description": "",
+      "order": 16,
+      "name": "Certified Security Operations Analyst",
+      "images": [
+        "/api/blobs/certificates_new_1782932240478-74783980.jpg?v=1782932244761"
+      ],
+      "inProgress": true
+    },
+    {
+      "id": "KBMspPzJnURqvnabtbFS",
+      "name": "Junior Web3 Auditor",
+      "worth": 0,
+      "date": "",
+      "order": 27,
+      "description": "",
+      "inProgress": true,
+      "issuer": "Vibe Security",
+      "images": []
+    },
+    {
+      "id": "M5GoSTGsVaKLnPoO4lEV",
+      "name": "Multi-Cloud Red Team Analyst (MCRTA)",
+      "worth": 9,
+      "inProgress": true,
+      "date": "",
+      "order": 20,
+      "description": "",
+      "issuer": "CyberWarFare Labs",
+      "images": [
+        "/api/blobs/certificates_new_1784660192613-317212353.png?v=1784660196073"
+      ]
+    },
+    {
+      "id": "PWNHRQeRwp7iQKi2vJ7U",
+      "images": [
+        "/api/blobs/certificates_PWNHRQeRwp7iQKi2vJ7U_1782449357380-772462014.png?v=1782449414581"
+      ],
+      "issuer": "Deloitte (by Forage)",
+      "inProgress": false,
+      "credentialId": "pauMbtv8Cr99b5pyB",
+      "name": "Cyber Job Simulation",
+      "order": 12,
+      "worth": 0,
+      "link": {
+        "text": "Verify",
+        "url": "https://www.theforage.com/completion-certificates/9PBTqmSxAf6zZTseP/E9pA6qsdbeyEkp3ti_9PBTqmSxAf6zZTseP_69c72f16dddc9e6b1c8d8b49_1780109698479_completion_certificate.pdf"
+      },
+      "date": "30 May, 2026"
+    },
+    {
+      "id": "ShhpOsllWqqCWjqYFakd",
+      "order": 6,
+      "name": "Cybersecurity Incident Response",
+      "worth": 0,
+      "images": [
+        "/api/blobs/certificates_ShhpOsllWqqCWjqYFakd_1782449201336-131853686.png?v=1782449258531"
+      ],
+      "issuer": "MISK | Mohammed Bin Salman Foundation",
+      "credentialId": "VC-2KBDOHRV",
+      "inProgress": false,
+      "link": {
+        "text": "Verify it (in SA only or with a SA VPN)",
+        "url": "https://vwe.misk.org.sa/courses/verify?serial=VC-2KBDOHRV"
+      },
+      "date": "21 March, 2026"
+    },
+    {
+      "id": "T7j8gnqVeqaOFFadjgWK",
+      "worth": 0,
+      "date": "1 June, 2026",
+      "link": {
+        "url": "https://www.theforage.com/completion-certificates/ifobHAoMjQs9s6bKS/gmf3ypEXBj2wvfQWC_ifobHAoMjQs9s6bKS_69c72f16dddc9e6b1c8d8b49_1780293911625_completion_certificate.pdf",
+        "text": "Verify"
+      },
+      "issuer": "TATA (by Forage)",
+      "order": 11,
+      "images": [
+        "/api/blobs/certificates_T7j8gnqVeqaOFFadjgWK_1782449339254-481512774.png?v=1782449396613"
+      ],
+      "inProgress": false,
+      "credentialId": "qHB6f6WraAbabL5ix",
+      "name": "Cybersecurity Analyst Job Simulation"
+    },
+    {
+      "id": "V0e3kDUZCY5SBBG3nThJ",
+      "inProgress": false,
+      "link": {
+        "text": "Verify",
+        "url": "https://courses.redteamleaders.com/exam-completion/9b7edef2fb5de3a1"
+      },
+      "date": "24 May, 2026",
+      "credentialId": "9b7edef2fb5de3a1",
+      "order": 6,
+      "worth": 0,
+      "name": "Certified Cybersecurity Educator Professional (CCEP)",
+      "images": [
+        "/api/blobs/certificates_V0e3kDUZCY5SBBG3nThJ_1782449251798-290311582.png?v=1782449308787"
+      ],
+      "issuer": "Red Team Leaders"
+    },
+    {
+      "id": "X5R3IWbOKO07KdNbbVyZ",
+      "order": 14,
+      "inProgress": false,
+      "images": [
+        "/api/blobs/certificates_X5R3IWbOKO07KdNbbVyZ_1782450418259-923784467.png?v=1782450419030",
+        "/api/blobs/certificates_X5R3IWbOKO07KdNbbVyZ_1783419160261-44139549.pdf?v=1783419224430"
+      ],
+      "worth": 0,
+      "issuer": "McKinsey.org",
+      "description": "This program enables participants to develop practical skills for success in the future of work. Participants learn how to apply the McKinsey approach to problem-solving, become more effective and influential communicators and develop adaptable and resilience mindsets and habits. They also learn how to plan for and develop a foundational digital toolkit",
+      "link": {
+        "url": "https://www.credly.com/badges/7b0c9852-5c74-4aa2-847a-d3caa86667dc/public_url",
+        "text": "Verify"
+      },
+      "date": "07 Jul, 2026",
+      "name": "Mckinsey Forward Program"
+    },
+    {
+      "id": "cnB6A7Ph8seC1nkSF7cP",
+      "date": "30 May, 2026",
+      "link": {
+        "url": "https://www.theforage.com/completion-certificates/gCW7Xki5Y3vNpBmnn/yTszJTvkHFBH6zAn3_gCW7Xki5Y3vNpBmnn_69c72f16dddc9e6b1c8d8b49_1780106794427_completion_certificate.pdf",
+        "text": "Verify"
+      },
+      "worth": 0,
+      "inProgress": false,
+      "credentialId": "bWxRRwS7YjmmQFtdp",
+      "order": 10,
+      "issuer": "Datacom (by Forage)",
+      "images": [
+        "/api/blobs/certificates_cnB6A7Ph8seC1nkSF7cP_1782449327730-574273718.png?v=1782449384719"
+      ],
+      "name": "Cyber Security Operations Job Simulation"
+    },
+    {
+      "id": "cxzXcszn9oRyP8llhtWB",
+      "description": "",
+      "inProgress": true,
+      "order": 25,
+      "images": [],
+      "issuer": "Vibe Security",
+      "date": "",
+      "worth": 0,
+      "name": "Certified Vibe Pentester"
+    },
+    {
+      "id": "gLZC2QNiUbHUkrcwJ78x",
+      "name": "Purple Teaming Fundamentals (PTF)",
+      "inProgress": false,
+      "credentialId": "6a7a8119870db0075a3c1984",
+      "date": "11 Aug, 2026",
+      "link": {
+        "url": "https://labs.cyberwarfare.live/credential/achievement/6a7a8119870db0075a3c1984",
+        "text": "Verify"
+      },
+      "description": "**Certified Purple Teaming Fundamentals Certificate** is earned by mastering Purple Team Operations, Offense-Defense Collaboration, Attack Simulation, and Detection Validation including practical web and network exercises and successfully passing the **Purple Teaming Fundamentals Quiz**.\n\n### Capabilities\n\nThe holder of the **Purple Team Fundamentals (PTF) Certificate** possesses the capability of the following demanding skills :\n\n-   Bridge red and blue team operations effectively in simulated attack-defense scenarios.\n-   Conduct attack simulations and map outcomes to defensive detections.\n-   Build and operate a Purple Team home lab environment for continuous learning.\n-   Analyze web and network attacks with actionable insights for enterprise defense.\n-   Collaborate on improving organizational security posture via purple teaming.",
+      "issuer": "CyberWarFare Labs",
+      "worth": 29,
+      "images": [
+        "/api/blobs/certificates_gLZC2QNiUbHUkrcwJ78x_1786542953769-471608357.png?v=1786543039486"
+      ],
+      "order": 4
+    },
+    {
+      "id": "gjL51lGP3qu6ekks34nq",
+      "inProgress": true,
+      "issuer": "APIsec University",
+      "name": "Certified API Security Analyst (CASA)",
+      "images": [
+        "/api/blobs/certificates_new_1792423856385-630715100.jpeg?v=1792423976413"
+      ],
+      "date": "",
+      "description": "",
+      "worth": 0,
+      "order": 23
+    },
+    {
+      "id": "irDbL9C3HUvMvzqSsFvO",
+      "link": {
+        "url": "https://labs.cyberwarfare.live/credential/achievement/6a76f0a3a8dc97c4c7dd7f10",
+        "text": "Verify"
+      },
+      "date": "8 Aug, 2026",
+      "credentialId": "6a76f0a3a8dc97c4c7dd7f10",
+      "worth": 59,
+      "name": "Cyber Security Analyst (C3SA)",
+      "order": 3,
+      "inProgress": false,
+      "description": "**Certified Cyber Security Analyst (C3SA) Certificate** is earned by mastering the foundational domains of cybersecurity including network security, web exploitation, cloud fundamentals, vulnerability analysis, and SOC operations through hands-on local lab deployment and successfully passing the **Certified Cyber Security Analyst Quiz**.\n\n### Capabilities\n\nThe holder of an **Certified Cyber Security Analyst (C3SA) Certificate** possesses the capability to:\n\n-   Identify and analyze common vulnerabilities and attack vectors across web, network, and system layers.\n-   Conduct basic penetration testing and vulnerability assessments.\n-   Understand SOC workflows, log analysis, and defensive monitoring concepts.\n-   Configure and operate a local cybersecurity lab environment for self-paced skill development.\n-   Apply foundational principles of cyber defense, ethical hacking, and system hardening in real-world contexts.",
+      "issuer": "CyberWarFare Labs",
+      "images": [
+        "/api/blobs/certificates_irDbL9C3HUvMvzqSsFvO_1786542813754-743553541.png?v=1786542901070"
+      ]
+    },
+    {
+      "id": "jGGNlgH8y0coDi1VKxYA",
+      "name": "Cybersecurity Job Simulation",
+      "inProgress": false,
+      "worth": 0,
+      "credentialId": "AFTmN5nE5y5FwFiJP",
+      "order": 9,
+      "issuer": "AIG (by Forage)",
+      "images": [
+        "/api/blobs/certificates_jGGNlgH8y0coDi1VKxYA_1782449308428-707029140.png?v=1782449365418"
+      ],
+      "link": {
+        "url": "https://www.theforage.com/completion-certificates/4nAmAbTbHbnGMNSyo/2ZFnEGEDKTQMtEv9C_4nAmAbTbHbnGMNSyo_69c72f16dddc9e6b1c8d8b49_1780281090716_completion_certificate.pdf",
+        "text": "Verify"
+      },
+      "date": "1 June, 2026"
+    },
+    {
+      "id": "mQ9EK6tcaqgIKsWJ0gVW",
+      "order": 2,
+      "credentialId": "6a6600fe8aed14e94c8f7d67",
+      "description": "Certified Multi-Cloud Blue Team Analyst (MCBTA) Certificate is earned by understanding Cloud Blue Team Concepts and completing the defensive challenge deployed across AWS, Azure & GCP Cloud by successfully passing the flag based practical examination.\n\n### Capabilities\n\nThe holder of Multi-Cloud Blue Team Analyst Certificate possess the capability of the following demanding skills :\n\n-   Knowledge of Cloud Blue Team Methodologies\n-   Understanding of MITRE Cloud ATT&CK Red Team TTPs\n-   Investigate & Secure Multi-Cloud resources\n-   Setup & Deploy Cloud SOC for cloud attacks monitoring\n-   Securing Core Services IAM, RBAC, Compute & Storage.\n-   Central Log Monitoring for attacks in AWS, GCP & Azure Cloud.\n-   Understanding Attacker Mindset in Cloud Attack Cycle\n\n### Next Steps\n\nMCBTA Holders demonstrates strong understanding of Cloud Blue Team Methodology by deploying, transferring and monitoring for stealth attacks across multi-cloud environment. They are best suited for Security Analysts / Security Consultants / Security Engineer etc.",
+      "worth": 49,
+      "images": [
+        "/api/blobs/certificates_mQ9EK6tcaqgIKsWJ0gVW_1785117496942-585122143.jpg?v=1785117510107"
+      ],
+      "inProgress": false,
+      "issuer": "CyberWarFare Labs",
+      "link": {
+        "url": "https://labs.cyberwarfare.live/credential/achievement/6a6600fe8aed14e94c8f7d67",
+        "text": "Verify"
+      },
+      "date": "16 Jul, 2026",
+      "name": "Certified Multi-Cloud Blue Team Analyst (MCBTA)"
+    },
+    {
+      "id": "mk3b2ZlWFvajvScKxnyr",
+      "inProgress": false,
+      "link": {
+        "url": "https://www.theforage.com/completion-certificates/2sNmYuurxgpFYawco/x52Jy9s26xNbZkTQ7_2sNmYuurxgpFYawco_69c72f16dddc9e6b1c8d8b49_1780299426250_completion_certificate.pdf",
+        "text": "Verify"
+      },
+      "date": "1 June, 2026",
+      "images": [
+        "/api/blobs/certificates_mk3b2ZlWFvajvScKxnyr_1782449288092-772399553.png?v=1782449345046"
+      ],
+      "issuer": "Commonwealth bank (by Forage)",
+      "order": 8,
+      "worth": 0,
+      "credentialId": "u5QL4xowgLxSK3mvX",
+      "name": "Introduction to Cybersecurity Job Simulation"
+    },
+    {
+      "id": "oIdJly05yhswZ7M9L6tV",
+      "date": "11 Jun, 2026",
+      "link": {
+        "text": "Verify it (in SA only or with a SA VPN)",
+        "url": "https://vwe.misk.org.sa/courses/verify?serial=VC-QSTTTPBH"
+      },
+      "credentialId": "VC-QSTTTPBH",
+      "worth": 0,
+      "order": 5,
+      "name": "Cloud Computing",
+      "inProgress": false,
+      "issuer": "MISK | Mohammed Bin Salman Foundation",
+      "images": [
+        "/api/blobs/certificates_new_1782326504257-567824994.png?v=1782326563232"
+      ]
+    },
+    {
+      "id": "qegsnSy1CQZY3ywWUbJZ",
+      "name": "Cybersecurity Job Simulation",
+      "inProgress": false,
+      "credentialId": "6xxPoKJPZjS43uCun",
+      "date": "28 May, 2026",
+      "link": {
+        "text": "Verify",
+        "url": "https://www.theforage.com/completion-certificates/mfxGwGDp6WkQmtmTf/vcKAB5yYAgvemepGQ_mfxGwGDp6WkQmtmTf_69c72f16dddc9e6b1c8d8b49_1779954463461_completion_certificate.pdf"
+      },
+      "issuer": "Mastercard (by Forage)",
+      "worth": 0,
+      "images": [
+        "/api/blobs/certificates_qegsnSy1CQZY3ywWUbJZ_1782449267613-874227431.png?v=1782449324833"
+      ],
+      "order": 7
+    },
+    {
+      "id": "vvvYDZEiLv0WRU5AbyaK",
+      "worth": 5,
+      "inProgress": false,
+      "link": {
+        "url": "https://vibsecurity.com/verify-certificate?id=VS-JVP-CERT798317",
+        "text": "Verify it"
+      },
+      "date": "17 June, 2026",
+      "order": 0,
+      "credentialId": "VS-JVP-CERT798317",
+      "name": "Junior Vibe Pentester (JVP)",
+      "issuer": "Vibe Security",
+      "images": [
+        "/api/blobs/certificates_vvvYDZEiLv0WRU5AbyaK_1782449134391-862009763.png?v=1782449209490",
+        "/api/blobs/certificates_vvvYDZEiLv0WRU5AbyaK_1782449166168-5230845.png?v=1782449228093"
+      ]
+    },
+    {
+      "id": "xW399g6LPWpTKMJRvA3d",
+      "description": "",
+      "images": [
+        "/api/blobs/certificates_new_1792423813871-755606589.jpeg?v=1792423934303"
+      ],
+      "order": 22,
+      "name": "APIsec Certified Practitioner",
+      "issuer": "APIsec University",
+      "inProgress": true,
+      "worth": 0,
+      "date": ""
+    },
+    {
+      "id": "yoJ8HGYh2PRNTaDpdTaQ",
+      "inProgress": false,
+      "name": "Certified Blue Team Fundamentals (BTF)",
+      "worth": 29,
+      "order": 1,
+      "credentialId": "BTF-6a51927d8aed14e94c834f16",
+      "issuer": "CyberWarFare Labs",
+      "description": "**Certified Blue Team Fundamentals Certificate** is earned by mastering Security Operations, Cyber Threat Hunting & Intelligence, Incident Response, and Digital Forensics including hands-on analysis of web, network, and host-based attacks.\n\n\n### Capabilities\nThe holder of the **Blue Team Fundamentals (BTF) Certificate** possesses the capability of the following demanding skills :\n* Monitor, detect, and analyze cyber threats across web, network, and host environments.\n* Conduct incident response and digital forensic investigations.\n* Correlate attacks and logs using SIEM solutions.\n* Deploy and operate a local blue team lab for continuous learning and practice.\n* Understand the roles & responsibilities of enterprise cyber defenders.\n",
+      "images": [
+        "/api/blobs/certificates_yoJ8HGYh2PRNTaDpdTaQ_1783730969246-323719811.png?v=1783731036641"
+      ],
+      "date": "11 Jul, 2026",
+      "link": {
+        "text": "Verify",
+        "url": "https://labs.cyberwarfare.live/credential/achievement/6a51927d8aed14e94c834f16"
+      }
+    }
+  ],
+  "skills": [],
+  "specializations": [
+    {
+      "id": "D7EdQfIrk8RYe01KY9Y3",
+      "order": 2,
+      "imageUrl": "",
+      "description": "Expertise in Debian/Ubuntu, kernel tuning, and automated security hardening.",
+      "title": "Linux Engineering"
+    },
+    {
+      "id": "MIhiZhTpDZ3Ub5xBukh1",
+      "order": 1,
+      "description": "AI penetration testing, Pivoting, Identify Information Disclosures",
+      "imageUrl": "",
+      "title": "AI Security"
+    },
+    {
+      "id": "e180p0yTnIEkRRxJ6ju6",
+      "imageUrl": "",
+      "title": "Cybersecurity Analyst ",
+      "description": "Analyze incidents and alerts to make a decision that secures systems",
+      "order": 0
+    }
+  ],
+  "blogs": [
+    {
+      "id": "7cjzbwLGKbwDIh63VUrD",
+      "title": "The Uncrackable Games Are Gone — Here’s What Just Changed Forever",
+      "imageUrl": "/api/blobs/blogs_new.png?v=1782449639358",
+      "date": "2026-06-26",
+      "tags": [
+        "Gaming",
+        " Exploit development",
+        " Cybersecurity",
+        " Virtualization"
+      ],
+      "content": "",
+      "status": "published",
+      "externalUrl": "https://medium.com/@AbdulrahmanKamal/the-uncrackable-games-are-gone-heres-what-just-changed-forever-77a989271662"
+    },
+    {
+      "id": "WEeplrYhHAUBc8M8mF60",
+      "description": "\nيجب أن نعرف مبدئياً أن “النظام” أو “المنظومة” هي عبارة عن مجموعة متكاملة ومتجانسة من المكونات التي تعمل بالتعاون فيما بينها لتحقيق غاية أو عدة غايات معينة",
+      "title": "What is Linux?",
+      "date": "2025-08-12",
+      "content": "![captionless image](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*CVWNt8u4XgFFA4xhuUhyeA.png)\n\nما هو لينكس؟\n============\n\n[![Abdulrahman Kamal](https://miro.medium.com/v2/resize:fill:64:64/1*7_BEGesHqPVHrl0ifILrsA.jpeg)](https://medium.com/@AbdulrahmanKamal?source=post_page---byline--c9dd92a3d479---------------------------------------)\n\n[Abdulrahman Kamal](https://medium.com/@AbdulrahmanKamal?source=post_page---byline--c9dd92a3d479---------------------------------------)\n\n\n\nيجب أن نعرف مبدئياً أن “النظام” أو “المنظومة” هي عبارة عن مجموعة متكاملة ومتجانسة من المكونات التي تعمل بالتعاون فيما بينها لتحقيق غاية أو عدة غايات معينة فمثلاً نظام الكمبيوتر ويندوز فيه عدة مكونات من الممكن رؤية بعضها بعينك، كل واحدة تعمل مع الأخرى لإعطائك تجربة استخدام تلبي رغباتك، دراسة، عمل، غيره ونظام الجوال كالأندرويد فيه عدة مكونات تهدف إلى إعطاءك تجربة حياة ذكية متنقلة بين يديك بأقل استهلاك للطاقة.\n\nو هناك أيضاً نظام يدعى بـ”لينكس” ظهر نتيجة لغضب من احتكار مختبرات بيل نظام “يونكس” وبتكاليف باهضة، ومنذ ذلك الحين بدأ العمل على نظام يشبهه مفتوح المصدر يدعى “جنو “ من قبل ريتشارد ستالمن، ولكن يفتقد هذا النظام إلى نواة مشغلة له .وهنا جاء شغوف آخر يسمى لينوس تورفالدس الذي كان يعمل على نواة جديدة وهي مشروع شخصي لا أكثر لتطوير حاسوبه الشخصي وبفضل نواة لينكس تم القضاء على احتكارية معامل بيل وخرج إلى العالم نظام مفتوح المصدر يسمى “جنو لينكس” وهو ما يتداوله العامة بتسمية “لينكس”. أما بخصوص التسمية فقد جاءت بعد تغيرات متعددة وليست أول اسم للمشروع.. يمكن القراءة أكثر عن الموضوع في هذا المقال من [ويكيبيديا](https://ar.wikipedia.org/wiki/%D9%84%D9%8A%D9%86%D9%83%D8%B3).\n\nفي البداية كان النظام يعمل على معالجات 386 فقط وكان يفتقر للتحسينات والإضافات.. وبفضل مشروع لينوس تورفالدس الذي جاء من الحاجة لتعاون المبرمجين والشغوفين بعلوم الحاسوب لتطوير مشروعه جاء مشروع جديد بإسم “جيت” مكن نظام لينكس من التطور بشكل مرعب حتى صار يمكن تشغيله على مختلف المنتجات (الكمبيوترات بأنواعها ، الجوالات ، الرواتر ، وأجهزة التحكم الآلي ، والتلفاز ، وأجهزة التسجيل الرقمية ، ومشغلات الألعاب ، والساعات الذكية ، والهواتف الذكية ، والأجهزة المضمنة كالمتحكمات الصناعية ، وسرفرات الأنترنت ، وكالات الفضاء ، وغيره)\n\nإحصائيات بسيطة للينكس:\n----------------------\n\n*   تعمل عليه 98% من سيرفرات العالم\n*   تعمل عليه الهواتف الذكية بنظام الأندرويد بجميع أشكالها و أنواعها\n*   يعمل عليه أقوى 500 حاسوب فائق في العالم\n\nفما الذي يميز لينكس ؟\n---------------------\n\nلينكس يمتاز بعدة أشياء تعدت حتى الجانب التقني وحسب : —\n\n*   يتميز جنو/لينكس بالثبات والنظام الأمني الأكثر إحكامًا\n*   تحتوي النواة لينكس على كل المميزات الموجودة في أي نظام تشغيل\n*   يقوم لينكس على مبدأ الشفافية وحرية الاستخدام والتحكم من قبل المسنخدم على أي مكون مكونات النظام والكمبيوتر\n*   محمي بحقوق فكرية للينوس تورفالدس لحمايته من الاحتكار التجاري\n*   تبنيه من قبل مجتمع ضخم جداً من الشغوفين حتى كبار المطورين والمبرمجين في علوم الحاسوب\n*   لا يوجد قيود لتشغيله في أي جهاز\n*   دعمه من قبل رؤوس الأعمال للحرص على الحفاظ على هذا المشروع العظيم بخصائصه الكاملة من الحرية وانفتاحية المصدر وضمان عدم الاحتكار وتطوير الأداء ليفيد الناس أجمع\n*   والكثير..\n\nبالمختصر المفيد..\n-----------------\n\nيمكنك أن تفضل شراء بيت مكلف لا تعلم جودة وكيفية بناءه ولا يظهر لك منه سوى المظاهر ومع ذلك مقيد بأفعال معينة فقط في هذا البيت\n\nأو أن تفضل بيت تم التكفل بتكاليف بناءه يتم بناءه من الصفر أمام عينك مع كامل الحرية بتعديل البيت وأيضاً مع كامل الحرية بفعل ما تشاء داخله",
+      "imageUrl": "/api/blobs/blogs_WEeplrYhHAUBc8M8mF60.jpg?v=1782769637643",
+      "status": "published",
+      "tags": []
+    },
+    {
+      "id": "qgtuYTmn987iBPey24Nr",
+      "title": "How to take a leading coordinator role within the croud - Buffer Overflow",
+      "content": "كيف ممكن تاخذ مكان قائد وسط الزحام — فيضان الذاكرة\n==================================================\n\n[![Abdulrahman Kamal](https://miro.medium.com/v2/resize:fill:64:64/1*7_BEGesHqPVHrl0ifILrsA.jpeg)](https://medium.com/@AbdulrahmanKamal?source=post_page---byline--781b1ee6c0ca---------------------------------------)\n\n[Abdulrahman Kamal](https://medium.com/@AbdulrahmanKamal?source=post_page---byline--781b1ee6c0ca---------------------------------------)\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1200/format:webp/1*qCEDGFhFuzwS6M3LLEG7AA.jpeg)\n\n**إذا كنت من الناس الذين يحبون اللعب بمدخلات أي برنامج ويحاول إدخال أي شيء غير المطلوب فأحب أقلك انك كنت أقرب بخطوة لاكتشاف أحد أشهر ثغرات البرمجيات**\n\n### إغراق أو فيضان ذاكرة البرنامج المؤقتة، هو نوع من الثغرات تنتج عن نقاط الضعف الناتجة عن إهمال توظيف تقنيات تقنين المدخلات والتي تحول بين الاستخدام العادي للبرمجية والاستخدام الضار بها ، ومنع هذا النوع من الثغرات وإدارة المدخلات بشكل سليم قبل أن تتم معالجتها أو التجهيز لمعالجتها.\n\n**وسأوضح لك تاليأ -عبر نموذج بسيط- كيف يتم ذلك وكيف يتم الحماية منه وكيف تعرف ما إن كانت هذه البرمجية قابلة للاستغلال عبر هذه الثغرة من الأساس:**\n\nأولاً — spiking:\n----------------\n\nspiking ، وهي العملية التي تقوم من خلالها بتجربة البرنامج ما إذا كان قابل للاستغلال بهذه الثغرة (فيضان الذاكرة) أم لا ، وذلك عبر استغلال أي مدخل من مدخلات البرنامج الذي ممكن استخدامها وإدخال إليه كمية كبيرة من المعلومات كل مرة تحاول فيها تزيد الكمية حتى تلاحظ آثار غير طبيعية بدأت تظهر على البرنامج (إما ببساطة عبر مراقبة البرنامج بشكل طبيعي أو عبر مراقبته بأحد برامج التحليل العكسي)\n\nثانياً — Fuzzing:\n-----------------\n\nوهنا، بعد ما عرفت المدخل الذي يوحي بوجود الثغرة، تقوم بمعرفة المزيد من التفاصيل وذلك بقياس المسببات والأعراض في اللحضة التي تعطل بها البرنامج أو أظهر تصرفات غير طبيعية ، فأثناء المراقبة عبر أحد برامج التحليل تقوم بتقريب أقصى حد من البيانات يمكن للمدخل أن يستوعبه فيتعطل وبذلك يكون عندك علم بالكمية التي تحتاجها لاستغلال هذه الذاكرة ، وهنا قمت بعمل سكربت بلغة بايثون يقوم بعد البيانات التي تم إرسالها بالبايت حتى أقوم بإيقاف البرنامج عندما ألاحظ -عبر برنامج التحليل- تعطل البرنامج.\n\n![captionless image](https://miro.medium.com/v2/resize:fit:534/format:webp/1*_UxGswr-FSLzQ70pJC8cXA.png)\n\nثالثاً — determine the offset:\n------------------------------\n\nفي المرحلة السابقة، كنا نملأ جميع مساحة المدخل والذاكرة المقسمة التي يعتمد عليها ولكن الان يجب أن ندرك بدقة حجم الذواكر المقسمة المطلوبةمسجلات الذواكر الأساسية لاستغلال هذه الثغرة :\n\n*   ESP : يستخدم لتسجيل اخر عنوان تم تخزين فيه بيانات ، ويكون هذا العنوان ضمن الذاكرة المقسمة المخصصة لتخزين بيانات وأوامر البرنامج والتي تشمل بيانات الدالة المصابة أثناء استغلالها.\n*   EIP : وهذا المسجل الأهم في الموضوع ، وهو الذي يحتوي على عنوان التعليمة التالية في الذاكرة المقسمة لينفذها المعالج ، وإذا تمكنا من تعديل العنوان المخزن فيها ، نستطيع إعادة توجيه المعالج لينفذ تعليماتنا الموجودة في أحد الذواكر المقسمة ، بالتحديد تلك التي سجلها esp.\n\nوهنا سوف نقوم بإنشاء نص مميز بحيث نستطيع تمييز مواضعه عند متابعته ببرامج التحليل :\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*7waLGyV2sTA74aY02p8kbw.png)\n\nالموضوع أشبه بصب كمية كبيرة من الماء على الأرض مع وضع علم بلون مختلف بعد كل متر فيه لتر من الماء ، حتى نتمكن من معرفة كمية الماء عند مسافة معينة من الأمتار عبر هذه الأعلام الملونة ، وبالمثل هنا ، لتحديد مدى استيعاب المدخل في الدالة التي فيها الثغرة حتى يتم بعدها تعديل مسجل EIP ومن ثم تعديل الذاكرة الخاصة ببيانات وأوامر البرنامج أو الدالة.\n\nوبعد ما أرسلنا هذا النص ، نجد ي برنامج التحليل أن EIP يحتوي على البيانات التالية:\n\n![captionless image](https://miro.medium.com/v2/resize:fit:244/format:webp/1*C09NSsOGgs1Kjch-97UgXg.png)\n\nوما إن نقوم بإدخال هذه البيانات مع حجم النص الذي أنشأناه في هذه الأداة.. تقوم بإعادة توليد نفس النص بنفس الكيفية وتحديد مكان البيانات التي أعطيناها ومن ثم تقوم بإرجاع مكان البيانات التي ادخلناها وهي رقم اخر بايت يستطيع المدخل استيعابه قبل التجاوز إلى تعديل بيانات المسجل والذاكرة المقسمة:\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*ON_sghwyCF5MKh_gL8udFQ.png)\n\nوبهكذا نعرف أن قدرة استيعابه 2003 بايت فقط 👍🏻.\n\nرابعاً — Overwritting the EIP:\n------------------------------\n\nوالان بعد ما تمكنا من ملئ استيعاب المدخل نستطيع الانتقال إلى تغيير المسجل EIPوذلك بعد الكمية التي يستطيع استيعابها مباشرة.. بمعنى انه بعد 2003 بايت نستطيع تغيير وتعبئة بيانات EIPوما سنقوم به هو إرسال (2003xA) متبوعاً ب(4xB)والتي سوف تكون رقم 43 أربع مرات\n\n![captionless image](https://miro.medium.com/v2/resize:fit:234/format:webp/1*uQcaB3PX1YB3nsc-O4tdVg.png)\n\nوهذا يدل على أننا قادرين فعلاً على السيطرة على EIP.\n\nخامساً — Finding bad characters:\n--------------------------------\n\nيجب أن ننتبه أن هناك ما تسمى بالحروف أو العناصر السيئة وهي حروف أو أرقام أو تعليمات بالشكل السداسي عشر ما إن يراها النظام يقوم بتغييرها لأنها تمثل تعليمات ضارة له وهذا يعرض كود استغلال الثغرة للتعديل والعرقلة وهذا ما لا نريده.ممكن العثور على مجموعة من هذه العناصر الشائعة على الانترنت وتجربتها، وهنا يعتبر ال 00 عنصر سيء .. فلنجرب\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1196/format:webp/1*1AmNjS7bhtZsaPnJ9YvBPA.png)\n\nبعد الإرسال نقوم بتتبع الذاكرة التي يشير إليها المسجل ESP\n\n![captionless image](https://miro.medium.com/v2/resize:fit:710/format:webp/1*Sj7GY4KJAGcKSbQWZcZlfw.png)\n\nونلاحظ هنا كثرة الأصفار عند الأسهم الحمراء وانعدام التتالي بالأرقام والحروف عند الأسهم الخضراء ، وبداية العيوب بعد ما قمنا بتعبئة المدخل ب(2003xA).\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1322/format:webp/1*VsE2-onTMdOXUW94IDvibg.png)\n\nبينما هنا\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1162/format:webp/1*FmuOfuqdA-Y3sPPCmsbxUA.png)\n\nنتج عنه ترتيب بالأرقام والحروف كما هو متوقع ولم يتم تغيير أي شيء أرسلناه:\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1304/format:webp/1*ftw-m4A-WGBj7cuVBSnjVQ.png)\n\nسادساً — Finding the right module:\n----------------------------------\n\nوالان بعد ما تم إثبات استطاعتنا تغيير بيانات المسجل EIP يجب الان أن نخزنه بعنوان تعليمه توجه البرنامج إلى الانتقال إلى المسجل ESP الذي يشير إلى مكان في الذاكرة نكون قد خزنا فيه كود استغلال الثغرة بعد ما قمنا بتعبئة المدخل وتغيير EIP مباشرة.فسنبحث في البرنامج عن عنوان تعليمه تكون من ضمن البرنامج ويتعرف عليها حتى ينفذها ، وتكون بنفس الوقت تعليمه مفيدة لصالحنا ، وهذه التعليمة هي JMP ESP.وسنقوم بالبحث بين مكتبات البرنامج عن واحدة تكون بلا حماية وأيضا فيها هذه التعليمة أولاً نعرض مكتبات البرنامج مع بياناتها:\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*keyo2I2_KzmdGc85txYBJg.png)\n\nومن هذه المكتبات هناك واحدة بدون أي حماية واسمها essfunc.dll:\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*UquvFCWgegMmSGtSuxdTZA.png)\n\nونبحث فيها عن التعليمة JMP ESP ولكن كتابتها بالحروف الانجليزية غير مفهوم بالنسبة لتعاملنا مع اللغة التي يفهم بها المعالج (السداسية عشر) ولذلك نقوم بالتحويل أو الترجمة من لغة التجميع إلى السداسية عشر :\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1066/format:webp/1*tdpw9OIJPMXOAEgdB-hSUw.png)\n\nثم نقوم بالبحث عنها في essfunc.dll:\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*YLh8gZUB1SlpFi0VsVx5gQ.png)\n\nونختار أحدهم، مثلا الأولى ونحفظ عنوانها (0x625011af)..الان بدل ما كنا نملأ المسجل EIP بحروف عادية ، الان نملأه بعنوان حقيقي، وللتأكد من ذلك لقد قمت بتعيين نقطة كسر لبرنامج التحليل بحيث إذا تم استدعاء العنوان يظهر إشعار ويوقف البرنامج المستهدف:\n\n![captionless image](https://miro.medium.com/v2/resize:fit:868/format:webp/1*hleM5U2bC_D5c1JR_7qE2A.png)\n\nسابعاً — Making the shellcode:\n------------------------------\n\nبعد ما اخذنا معلومات كافية عن حجم المدخل الذي تستطيع استيعابه الدالة المستهدفة في البرنامج المستهدف .. نقوم بصنع كود الاستغلال ، ويجب تحديد التفاصيل التالية أثناء صناعته :\n\n*   النظام المستهدف الذي يعمل عليها البرنامج للسيطرة على النظام: في هذه الحالة ويندوز\n*   نوع الاستغلال: في هذه الحالة أريده أن يفتح لي وسيط سطر أوامر عكسي من المستقبل للمرسل (أنا)\n*   عنوان المرسل الذي سوف يستمع وينتظر سطر الأوامر العكسي وهو الذي سيتحكم بالهدف المستقبل مع المنفذ: في هذه الحالة 192.168.1.3 على منفذ 4444\n*   كيفية فتح واغلاق جلسة الاستغلال: في هذه الحالة قمت بتعيينها thread حتى يتم فتح وإغلاق الجلسة بشكل مستقل دون إغلاق البرنامج المستهدف\n*   تنسيق المخرجات: في هذه الحالة قمت بتعيينه c حتى يكون شكل payload بلغة c بحيث يسهل نسخها ودمجها في كود آخر بدلاً من أن تكون compiled\n*   المعمارية التي يعمل عليها البرنامج : في هذه الحالة x86 بمعنى x32\n*   العناصر السيئة : في هذه الحالة هو العنصر 00 الذي تم اكتشافه في الجزئية الخامسة من هذا المقال سابقاً\n\nوهذا هو الناتج :\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*MmR2G5KNAfqUSo9jQLPlgg.png)\n\nثامناً — Gaining a shell:\n-------------------------\n\nوالان حان وقت تنفيذ الثغرة والاختراق ، وهذا سوف يكون طريقة عمل استغلال الثغرة\n\n![captionless image](https://miro.medium.com/v2/resize:fit:982/format:webp/1*-7E_90gomHr-_iwlkUYzuQ.png)\n\nونقوم بفتح سطر أوامر ونفتح منفذ نستمع عبره لسطر الأوامر العكسي القادم من الهدف (مستقبل الاستغلال الثغرة) وهو نفس المنفذ الذي قمنا بتعيينه سابقاً\n\n![captionless image](https://miro.medium.com/v2/resize:fit:542/format:webp/1*8R4cPnlcSVubmRvDA_p4EA.png)\n\nوبهكذا.. تم الاختراق:\n\n![captionless image](https://miro.medium.com/v2/resize:fit:1066/format:webp/1*ZiPCD_-8gbEuk9FDdOVH4Q.png)\n\nفيضان الذاكرة عملية مستفيضة من الدراسة والتخطيط فيها تفاصيل كثيرة لا يسعني ذكر تفاصيلها هنا وقد قمت بتبسيط هذا المقال إلى أقصى حد ممكن، وهي ليست مجرد نمط معلوم مع اختلاف في الأرقام والعناوين.",
+      "date": "2025-08-28",
+      "imageUrl": "/api/blobs/blogs_qgtuYTmn987iBPey24Nr.jpg?v=1782751990261",
+      "description": "إذا كنت من الناس الذين يحبون اللعب بمدخلات أي برنامج ويحاول إدخال أي شيء غير المطلوب فأحب أقلك انك كنت أقرب بخطوة لاكتشاف أحد أشهر ثغرات البرمجيات\n",
+      "tags": [],
+      "status": "published"
+    }
+  ]
+}
