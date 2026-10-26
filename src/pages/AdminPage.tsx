@@ -2259,7 +2259,14 @@ function SpecializationEditor() {
 
       <div className="space-y-4">
         {items.map(item => (
-          <ListItem key={item.id} title={item.title} subtitle={item.description} onEdit={() => setEditing(item)} onDelete={() => handleDelete(item.id!)} />
+          <ListItem 
+            key={item.id} 
+            title={item.title} 
+            subtitle={item.description} 
+            imageUrl={item.imageUrl} 
+            onEdit={() => setEditing(item)} 
+            onDelete={() => handleDelete(item.id!)} 
+          />
         ))}
       </div>
       {editing && (
@@ -2268,7 +2275,7 @@ function SpecializationEditor() {
             <Input label="Title" value={editing.title || ''} onChange={v => setEditing({...editing, title: v})} />
             <Input label="Description" value={editing.description || ''} onChange={v => setEditing({...editing, description: v})} textarea />
             <ImageUpload 
-              label="Small Image / Icon" 
+              label="Card Image (16:9 widescreen recommended)" 
               value={editing.imageUrl || ''} 
               onChange={v => setEditing({...editing, imageUrl: v})} 
               path="specializations" 
@@ -2613,7 +2620,7 @@ const ListItem: React.FC<{
     <div className="glass-sm p-6 rounded-2xl flex items-center justify-between group">
       <div className="flex items-center space-x-4">
         {imageUrl && (
-          <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex-shrink-0 flex items-center justify-center">
+          <div className="w-20 aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex-shrink-0 flex items-center justify-center">
             <img src={imageUrl} alt="" className="w-full h-full object-cover" />
           </div>
         )}

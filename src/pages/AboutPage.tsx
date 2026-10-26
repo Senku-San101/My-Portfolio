@@ -7,6 +7,7 @@ import { db, OperationType, handleFirestoreError, openLink } from '../lib/fireba
 import { Profile, AppSettings, Specialization } from '../types';
 import Typewriter from '../components/Typewriter';
 import PageWrapper from '../components/PageWrapper';
+import ImageViewer from '../components/ImageViewer';
 import { useLanguage } from '../context/LanguageContext';
 import { FileText, Eye, Download, X as XIcon } from 'lucide-react';
 
@@ -373,12 +374,20 @@ export default function AboutPage() {
                 className="glass-sm p-12 rounded-[3rem] border border-white/10 shadow-2xl group transition-all duration-500 flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="w-12 h-1 bg-blue-500/30 group-hover:w-20 transition-all duration-700" />
+                  <div className="flex items-center justify-between mb-8 gap-4">
+                    <div className="w-12 h-1 bg-blue-500/30 group-hover:w-20 transition-all duration-700 flex-shrink-0" />
                     {spec.imageUrl && (
-                      <div className="w-24 h-24 rounded-2xl overflow-hidden glass-sm p-1.5 flex-shrink-0 bg-white/5 border border-white/10 flex items-center justify-center">
-                        <img src={spec.imageUrl} alt={spec.title} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                      </div>
+                      <ImageViewer images={[spec.imageUrl]} label={spec.title}>
+                        <div className="w-28 sm:w-32 md:w-36 aspect-video rounded-2xl overflow-hidden glass-sm border border-white/10 flex-shrink-0 bg-black/40 relative shadow-lg group/img hover:border-blue-500/50 transition-all duration-300">
+                          <img 
+                            src={spec.imageUrl} 
+                            alt={spec.title} 
+                            className="w-full h-full object-cover rounded-2xl group-hover/img:scale-105 transition-transform duration-500" 
+                            referrerPolicy="no-referrer" 
+                          />
+                          <div className="absolute inset-0 bg-blue-500/0 group-hover/img:bg-blue-500/15 transition-colors duration-300 pointer-events-none" />
+                        </div>
+                      </ImageViewer>
                     )}
                   </div>
                   <h3 className="text-3xl font-black mb-6 tracking-tight leading-none italic group-hover:text-blue-500 transition-colors uppercase break-words">{spec.title}</h3>
