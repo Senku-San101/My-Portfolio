@@ -86,39 +86,51 @@ export default function ProjectsPage() {
   const safeActiveIndex = Math.max(0, Math.min(activeIndex, projects.length - 1));
   const activeProject = projects[safeActiveIndex];
 
-  // Sync URL query params with active project on load
+  // Helper function to find a project by ID or key terms
+  const findProjectIndex = (queryStr: string): number => {
+    if (!queryStr || projects.length === 0) return -1;
+    const q = queryStr.toLowerCase().trim();
+    // 1. Direct ID match
+    const exactId = projects.findIndex(p => p.id === queryStr);
+    if (exactId !== -1) return exactId;
+
+    // 2. Exact or partial title / keywords match
+    return projects.findIndex(p => {
+      const title = (p.title || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      if (title.includes(q)) return true;
+      if (q === 'misbar' && title.includes('misbar')) return true;
+      if ((q === 'tor' || q === 'tor-chat' || q === 'chat') && (title.includes('tor') || title.includes('chat'))) return true;
+      if ((q === 'the-right-text' || q === 'right-text' || q === 'rtl') && (title.includes('right') || title.includes('rtl'))) return true;
+      if ((q === 'ip-helper' || q === 'ip') && (title.includes('ip') || title.includes('helper'))) return true;
+      if ((q === 'security-lab' || q === 'lab' || q === 'proxmox') && (title.includes('lab') || desc.includes('proxmox'))) return true;
+      return false;
+    });
+  };
+
+  // Sync URL query params with active project on load and whenever searchParams change
   useEffect(() => {
     if (!loading && projects.length > 0) {
       const projectId = searchParams.get('project') || searchParams.get('projectId');
       if (projectId) {
-        const foundIndex = projects.findIndex(p => p.id === projectId);
+        const foundIndex = findProjectIndex(projectId);
         if (foundIndex !== -1) {
           setViewMode('console');
           setActiveIndex(foundIndex);
+          // Trigger smooth scroll to the active project console
+          setTimeout(() => {
+            const el = document.getElementById('active-project-console');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.classList.add('cyber-teleport-glow');
+              setTimeout(() => el.classList.remove('cyber-teleport-glow'), 3500);
+            }
+          }, 250);
         }
       }
       setIsInitialized(true);
     }
-  }, [loading, projects]);
-
-  // Separate effect to reliably handle scrolling once initialization is done and element exists
-  useEffect(() => {
-    if (isInitialized && viewMode === 'console' && !hasScrolled) {
-      const projectId = searchParams.get('project') || searchParams.get('projectId');
-      if (projectId) {
-        const el = document.getElementById('active-project-console');
-        if (el) {
-          setHasScrolled(true);
-          const t = setTimeout(() => {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 200);
-          return () => clearTimeout(t);
-        }
-      } else {
-        setHasScrolled(true);
-      }
-    }
-  }, [isInitialized, viewMode, hasScrolled, searchParams]);
+  }, [loading, projects, searchParams]);
 
   // Sync state back to URL when activeIndex changes
   useEffect(() => {
@@ -555,6 +567,8 @@ export default function ProjectsPage() {
                 return (
                   <motion.div
                     key={project.id || i}
+                    id={`project-${project.id}`}
+                    data-project-id={project.id}
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}

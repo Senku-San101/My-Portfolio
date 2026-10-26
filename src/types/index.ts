@@ -75,9 +75,12 @@ export interface Specialization {
 
 export interface Skill {
   id?: string;
-  category: string;
   name: string;
-  level: string; // e.g., "Beginner", "Intermediate", "Advanced"
+  description?: string;
+  icon?: string;
+  iconUrl?: string;
+  category?: string;
+  level?: string;
   order: number;
 }
 

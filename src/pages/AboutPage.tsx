@@ -228,7 +228,7 @@ export default function AboutPage() {
   return (
     <PageWrapper className="max-w-5xl mx-auto space-y-32">
       {/* Centered Hero Section */}
-      <section className="flex flex-col items-center text-center gap-16 pt-12">
+      <section id="profile-hero" className="flex flex-col items-center text-center gap-16 pt-12">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -357,7 +357,7 @@ export default function AboutPage() {
       {/* Mobile view interactive navigation suggesting next sections */}
       <MobileExploreNavigation />
 
-      <section className="space-y-16">
+      <section id="specializations" className="space-y-16">
         <div className="text-center space-y-4">
           <h2 className="text-5xl font-black tracking-tighter uppercase italic text-blue-500/20 dark:text-white/10">{t('specializations')}</h2>
         </div>

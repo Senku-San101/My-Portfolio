@@ -49,7 +49,15 @@ export default function BlogsPage() {
     if (!loading && blogs.length > 0) {
       const blogId = searchParams.get('id') || searchParams.get('blog');
       if (blogId) {
-        const found = blogs.find(b => b.id === blogId);
+        const target = blogId.toLowerCase().trim();
+        const found = blogs.find(b => 
+          b.id === blogId ||
+          (b.id || '').toLowerCase() === target ||
+          (b.title || '').toLowerCase().includes(target) ||
+          (target.includes('buffer') && (b.title || '').toLowerCase().includes('buffer')) ||
+          (target.includes('drm') && (b.title || '').toLowerCase().includes('drm')) ||
+          (target.includes('linux') && (b.title || '').toLowerCase().includes('linux'))
+        );
         if (found) {
           setSelectedBlog(found);
         }

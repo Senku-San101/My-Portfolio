@@ -1,28 +1,44 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles, Brain } from 'lucide-react';
+import { 
+  MessageSquare, X, Send, Bot, Loader2, Sparkles, 
+  Compass, Navigation, Minimize2, Maximize2 
+} from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Profile, AppSettings } from '../types';
 
+interface NavigationAction {
+  path: string;
+  targetId?: string;
+  label?: string;
+}
+
 interface ChatMessage {
   role: 'user' | 'model';
   parts: [{ text: string }];
+  navAction?: NavigationAction;
 }
 
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [autoNavEnabled, setAutoNavEnabled] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeTeleportNotice, setActiveTeleportNotice] = useState<string | null>(null);
+
   const { language } = useLanguage();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubProfile = onSnapshot(doc(db, 'profile', 'main'), (doc) => {
@@ -43,7 +59,7 @@ export default function ChatBot() {
       unsubSettings();
       clearTimeout(timer);
     };
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -52,6 +68,72 @@ export default function ChatBot() {
   }, [messages, loading]);
 
   if (location.pathname.startsWith('/admin')) return null;
+
+  // Extract [[NAVIGATE:path|targetId|label]] or [NAVIGATE:path|targetId|label]
+  const parseNavigationAction = (rawText: string): { cleanText: string; navAction?: NavigationAction } => {
+    const regex = /\[\[?NAVIGATE:([^|\]]+)(?:\|([^|\]]*))?(?:\|([^\]]*))?\]?\]/i;
+    const match = rawText.match(regex);
+
+    if (match) {
+      const path = match[1]?.trim();
+      const targetId = match[2]?.trim() || undefined;
+      const label = match[3]?.trim() || undefined;
+      const cleanText = rawText.replace(regex, '').trim();
+
+      if (path) {
+        return {
+          cleanText,
+          navAction: { path, targetId, label }
+        };
+      }
+    }
+
+    return { cleanText: rawText };
+  };
+
+  // Perform physical route transition & smooth scroll to specific element
+  const executeNavigation = (action: NavigationAction) => {
+    if (!action.path) return;
+
+    const currentFullPath = location.pathname + location.search;
+    const isDifferentRoute = currentFullPath !== action.path;
+
+    if (isDifferentRoute) {
+      navigate(action.path);
+    }
+
+    // Flash teleport banner
+    if (action.label) {
+      setActiveTeleportNotice(action.label);
+      setTimeout(() => setActiveTeleportNotice(null), 3000);
+    }
+
+    // Attempt to locate and scroll to target element
+    if (action.targetId) {
+      let attempts = 0;
+      const maxAttempts = 16;
+      const interval = setInterval(() => {
+        attempts++;
+        const el = document.getElementById(action.targetId!) ||
+                   document.querySelector(`[data-nav-id="${action.targetId}"]`) ||
+                   document.querySelector(`[data-exp-alias="${action.targetId}"]`) ||
+                   document.querySelector(`[data-svc-alias="${action.targetId}"]`) ||
+                   document.querySelector(`[data-cert-alias="${action.targetId}"]`) ||
+                   document.querySelector(`[data-project-id="${action.targetId}"]`);
+
+        if (el) {
+          clearInterval(interval);
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('cyber-teleport-glow');
+          setTimeout(() => el.classList.remove('cyber-teleport-glow'), 3500);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+        }
+      }, 100);
+    } else if (!isDifferentRoute) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const sendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || loading) return;
@@ -67,7 +149,7 @@ export default function ChatBot() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: textToSend,
-          history: messages,
+          history: messages.map(m => ({ role: m.role, parts: m.parts })),
           profileData: profile,
           customInstructions: settings?.chatBotInstructions,
           geminiApiKey: settings?.geminiApiKey
@@ -76,7 +158,22 @@ export default function ChatBot() {
 
       const data = await response.json();
       if (data.text) {
-        setMessages(prev => [...prev, { role: 'model', parts: [{ text: data.text }] }]);
+        const { cleanText, navAction } = parseNavigationAction(data.text);
+        
+        const modelMessage: ChatMessage = { 
+          role: 'model', 
+          parts: [{ text: cleanText }],
+          navAction 
+        };
+
+        setMessages(prev => [...prev, modelMessage]);
+
+        // Auto navigate if directive is found and auto-nav is enabled
+        if (navAction && autoNavEnabled) {
+          setTimeout(() => {
+            executeNavigation(navAction);
+          }, 350);
+        }
       } else if (data.error) {
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: "Protocol Error: " + (data.message || "Failed to transmit signal.") }] }]);
       }
@@ -100,6 +197,7 @@ export default function ChatBot() {
 
   return (
     <>
+      {/* Floating Launcher Button */}
       <div className="fixed bottom-24 end-6 md:bottom-6 md:end-6 z-40 flex flex-col items-end">
         <AnimatePresence>
           {showTooltip && !isOpen && (
@@ -109,11 +207,12 @@ export default function ChatBot() {
               exit={{ opacity: 0, scale: 0.8, x: isRtl ? -20 : 20 }}
               className="mb-4 bg-white dark:bg-blue-600 text-black dark:text-white px-4 py-2 rounded-2xl shadow-2xl text-sm font-medium relative border border-blue-500/20"
             >
-              I am here to help you know more about Abdulrahman Kamal
+              {language === 'ar' ? 'أنا هنا لمساعدتك والتجول معك في موقع عبدالرحمن كمال' : 'I am here to guide you through Abdulrahman Kamal\'s portfolio'}
               <div className="absolute bottom-[-6px] end-6 w-3 h-3 bg-white dark:bg-blue-600 rotate-45" />
               <button 
                 onClick={() => setShowTooltip(false)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 cursor-pointer"
+                title="Dismiss"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -124,9 +223,11 @@ export default function ChatBot() {
         <button 
           onClick={() => {
             setIsOpen(true);
+            setIsMinimized(false);
             setShowTooltip(false);
           }}
-          className="w-16 h-16 bg-gradient-to-tr from-blue-600 to-blue-400 text-white rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(59,130,246,0.5)] hover:scale-110 transition-transform relative overflow-hidden group"
+          className="w-16 h-16 bg-gradient-to-tr from-blue-600 to-blue-400 text-white rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(59,130,246,0.5)] hover:scale-110 transition-transform relative overflow-hidden group cursor-pointer"
+          title="Open AI Guide"
         >
           <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
           <Bot className="w-8 h-8 relative z-10" />
@@ -136,121 +237,211 @@ export default function ChatBot() {
         </button>
       </div>
 
+      {/* Main Interactive Chat Window & Floating Teleport HUD */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-40 end-4 start-4 md:bottom-24 md:end-6 md:start-auto md:w-[400px] h-[600px] glass-xl rounded-3xl z-50 flex flex-col overflow-hidden border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.5)] bg-white/10 dark:bg-black/80 backdrop-blur-3xl"
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ 
+              opacity: 1, 
+              y: 0, 
+              scale: 1,
+              height: isMinimized ? '72px' : '620px'
+            }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className={`fixed bottom-24 end-4 start-4 md:bottom-24 md:end-6 md:start-auto md:w-[420px] glass-xl rounded-3xl z-50 flex flex-col overflow-hidden border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.5)] bg-white/10 dark:bg-black/85 backdrop-blur-3xl transition-all`}
           >
             {/* Header */}
-            <div className="p-6 border-b border-white/10 flex items-center justify-between bg-blue-500/20">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <Bot className="text-white w-7 h-7" />
+            <div className="p-4 md:p-5 border-b border-white/10 flex items-center justify-between bg-blue-500/15">
+              <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
+                <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
+                  <Bot className="text-white w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base uppercase tracking-tighter">Neuro Assistant</h3>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-sm uppercase tracking-tight">Neuro Assistant</h3>
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                    <span className="text-[10px] text-gray-400 font-mono tracking-widest">LIVE SYNC ACTIVE</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-gray-400 font-mono tracking-widest uppercase">
+                      {isMinimized ? 'CLICK TO EXPAND' : 'AUTONOMOUS TOUR GUIDE'}
+                    </span>
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setIsOpen(false)} 
-                className="p-2 hover:bg-white/10 rounded-xl transition-all hover:rotate-90"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
 
-            {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-gradient-to-b from-transparent to-blue-500/5">
-              {messages.length === 0 && (
-                <div className="text-center py-6 space-y-4">
-                  <motion.div 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="w-14 h-14 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto"
-                  >
-                    <Sparkles className="w-7 h-7 text-blue-400" />
-                  </motion.div>
-                  <p className="text-[10px] text-blue-400 font-mono uppercase tracking-[0.3em]">System Initialized</p>
-                  <p className="text-xs text-gray-300 dark:text-gray-400 px-4 leading-relaxed">
-                    {language === 'ar' 
-                      ? 'مرحبًا! أنا العقل الافتراضي لعبدالرحمن كمال. اسألني عن مشاريعه، خبراته في الأمن السيبراني ولينكس، شهاداته، أو اختبرني بأي أسئلة تقنية.'
-                      : "Hello! I am Abdulrahman Kamal's virtual mind. Ask me about his projects, cybersecurity & Linux expertise, certifications, or grill me with tough technical questions!"}
-                  </p>
-
-                  <div className="pt-2 flex flex-col gap-2 px-2 text-left">
-                    {[
-                      { en: "Tell me about Misbar & P2P Chat", ar: "حدثني عن مشروعي مِسْبار ومحادثة P2P" },
-                      { en: "What certifications & credentials do you have?", ar: "ما هي شهاداتك واعتماداتك المهنية؟" },
-                      { en: "Explain your experience at Al-Aidaroos Solar & Tamkeen", ar: "اشرح خبرتك في شركة العيدروس وبنك تمكين" },
-                      { en: "/grill-me: Grill me with technical cybersecurity interview questions", ar: "/grill-me: اختبرني بأسئلة مقابلة تقنية متقدمة في الأمن السيبراني" },
-                    ].map((item, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => sendMessage(language === 'ar' ? item.ar : item.en)}
-                        className="text-[11px] p-2.5 rounded-xl bg-white/5 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-white/10 hover:border-blue-500/40 transition-all text-start flex items-center justify-between group cursor-pointer"
-                      >
-                        <span>{language === 'ar' ? item.ar : item.en}</span>
-                        <Send className="w-3 h-3 text-gray-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-transform" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {messages.map((msg, i) => (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={i} 
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              {/* Controls */}
+              <div className="flex items-center gap-1.5">
+                {/* Auto Navigation Switch */}
+                <button
+                  type="button"
+                  onClick={() => setAutoNavEnabled(!autoNavEnabled)}
+                  className={`px-2 py-1 rounded-xl text-[9px] font-mono font-bold tracking-wider flex items-center gap-1 transition-all border cursor-pointer ${
+                    autoNavEnabled 
+                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_8px_rgba(59,130,246,0.25)]' 
+                      : 'bg-white/5 text-gray-400 border-white/10'
+                  }`}
+                  title={autoNavEnabled ? "Auto-Navigate is ON: chatbot automatically scrolls to sections" : "Auto-Navigate is OFF: page will not move automatically"}
                 >
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                    msg.role === 'user' 
-                      ? 'bg-blue-600 text-white rounded-tr-none' 
-                      : 'bg-white/10 dark:bg-white/5 text-white/90 rounded-tl-none border border-white/10 backdrop-blur-md'
-                  }`}>
-                    {msg.parts[0].text}
-                  </div>
-                </motion.div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/10 flex items-center space-x-3">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                    <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-blue-400">Processing...</span>
-                  </div>
-                </div>
-              )}
-            </div>
+                  <Compass className={`w-3 h-3 ${autoNavEnabled ? 'text-blue-400 animate-spin-slow' : 'text-gray-500'}`} />
+                  <span className="hidden sm:inline">{autoNavEnabled ? 'AUTO-NAV ON' : 'PAUSED'}</span>
+                </button>
 
-            {/* Input */}
-            <form onSubmit={handleSubmit} className="p-6 border-t border-white/10 bg-black/40">
-              <div className="relative group">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Query system..."
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 pr-14 text-sm focus:outline-none focus:border-blue-500 transition-all placeholder:text-gray-600 focus:bg-white/10"
-                />
+                {/* Minimize / Expand Toggle */}
                 <button 
-                  type="submit"
-                  disabled={!input.trim() || loading}
-                  className="absolute right-2 top-2 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white disabled:opacity-50 disabled:bg-gray-500 transition-all hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] enabled:active:scale-95"
+                  onClick={() => setIsMinimized(!isMinimized)} 
+                  className="p-1.5 hover:bg-white/10 rounded-xl transition-all text-gray-400 hover:text-white cursor-pointer"
+                  title={isMinimized ? "Expand" : "Minimize"}
                 >
-                  <Send className="w-4 h-4" />
+                  {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                </button>
+
+                {/* Close Button */}
+                <button 
+                  onClick={() => setIsOpen(false)} 
+                  className="p-1.5 hover:bg-white/10 rounded-xl transition-all hover:rotate-90 text-gray-400 hover:text-white cursor-pointer"
+                  title="Close"
+                >
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="mt-4 text-[9px] text-center text-gray-500 font-mono uppercase tracking-widest opacity-50">
-                End-to-End Encrypted Session
-              </p>
-            </form>
+            </div>
+
+            {/* Flash Teleport Notice Banner */}
+            <AnimatePresence>
+              {activeTeleportNotice && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="bg-blue-600 text-white px-4 py-2 text-xs font-mono flex items-center justify-between border-b border-blue-400/30 overflow-hidden shadow-inner"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Navigation className="w-3.5 h-3.5 animate-bounce flex-shrink-0" />
+                    <span className="truncate">Navigating to <strong>{activeTeleportNotice}</strong></span>
+                  </div>
+                  <span className="text-[10px] uppercase font-bold tracking-widest opacity-80 flex-shrink-0">IN FOCUS</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Messages Body (Hidden when minimized) */}
+            {!isMinimized && (
+              <>
+                <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar bg-gradient-to-b from-transparent to-blue-500/5">
+                  {messages.length === 0 && (
+                    <div className="text-center py-4 space-y-4">
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto border border-blue-500/20"
+                      >
+                        <Compass className="w-6 h-6 text-blue-400 animate-spin-slow" />
+                      </motion.div>
+                      <p className="text-[10px] text-blue-400 font-mono uppercase tracking-[0.25em]">Interactive Tour Ready</p>
+                      <p className="text-xs text-gray-300 dark:text-gray-400 px-3 leading-relaxed">
+                        {language === 'ar' 
+                          ? 'مرحباً! أنا المرشد الذكي لعبدالرحمن كمال. اسألني عن مشاريعه، خبراته، شهاداته، أو مقالاته وسأقوم بأخذك مباشرة إلى القسم المطلوب وشرحه لك!'
+                          : "Hello! I am Abdulrahman Kamal's intelligent portfolio guide. Ask me to show you his projects, experience, certificates, or services and I will auto-navigate directly to show you!"}
+                      </p>
+
+                      <div className="pt-2 flex flex-col gap-2 px-1 text-left">
+                        {[
+                          { en: "Take me to your projects and show Misbar", ar: "خذني إلى المشاريع واعرض لي مشروع مِسْبار" },
+                          { en: "Show me your Al-Aidaroos Solar & Tamkeen experience", ar: "اعرض لي خبرتك في شركة العيدروس وبنك تمكين" },
+                          { en: "What services and security skills do you provide?", ar: "ما هي الخدمات الأمنية والتقنية التي تقدمها؟" },
+                          { en: "Show me your verified certifications & MCBTA", ar: "اعرض لي شهاداتك المعتمدة وشهادة MCBTA" },
+                          { en: "Take me to your Buffer Overflow memory layout writeup", ar: "انقلني إلى مقال ثغرات الذاكرة Buffer Overflow" },
+                          { en: "How can I contact Abdulrahman directly?", ar: "كيف يمكنني التواصل مع عبدالرحمن مباشرة؟" },
+                        ].map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => sendMessage(language === 'ar' ? item.ar : item.en)}
+                            className="text-[11px] p-2.5 rounded-xl bg-white/5 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-white/10 hover:border-blue-500/40 transition-all text-start flex items-center justify-between group cursor-pointer"
+                          >
+                            <span className="truncate pr-2">{language === 'ar' ? item.ar : item.en}</span>
+                            <Navigation className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {messages.map((msg, i) => (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      key={i} 
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`max-w-[88%] p-4 rounded-2xl text-xs md:text-sm leading-relaxed shadow-sm ${
+                        msg.role === 'user' 
+                          ? 'bg-blue-600 text-white rounded-tr-none' 
+                          : 'bg-white/10 dark:bg-white/5 text-white/90 rounded-tl-none border border-white/10 backdrop-blur-md'
+                      }`}>
+                        <div className="whitespace-pre-wrap">{msg.parts[0].text}</div>
+
+                        {/* Interactive Teleport Badge */}
+                        {msg.navAction && (
+                          <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-blue-400 font-mono text-[11px] truncate">
+                              <Compass className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 animate-spin-slow" />
+                              <span className="truncate">{msg.navAction.label || `Navigated to ${msg.navAction.path}`}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => executeNavigation(msg.navAction!)}
+                              className="flex-shrink-0 px-2 py-1 rounded-lg bg-blue-600/40 hover:bg-blue-600 text-blue-200 hover:text-white border border-blue-500/40 transition-all text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                              title="Scroll to this section again"
+                            >
+                              <Navigation className="w-3 h-3" />
+                              <span>{language === 'ar' ? 'عرض' : 'View'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+
+                  {loading && (
+                    <div className="flex justify-start">
+                      <div className="bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/10 flex items-center space-x-3">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                        <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-blue-400">
+                          {autoNavEnabled ? 'Analyzing & Teleporting...' : 'Processing Query...'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Input Field */}
+                <form onSubmit={handleSubmit} className="p-4 md:p-5 border-t border-white/10 bg-black/40">
+                  <div className="relative group">
+                    <input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder={language === 'ar' ? 'اطلب من المساعد نقلك وشرح أي قسم...' : 'Ask assistant to show you any section...'}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 pr-12 text-xs md:text-sm focus:outline-none focus:border-blue-500 transition-all placeholder:text-gray-500 focus:bg-white/10"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={!input.trim() || loading}
+                      className="absolute right-2 top-2 w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white disabled:opacity-50 disabled:bg-gray-500 transition-all hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] enabled:active:scale-95 cursor-pointer"
+                      title="Send query"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between text-[9px] text-gray-500 font-mono uppercase tracking-widest px-1">
+                    <span>End-to-End Encrypted</span>
+                    <span className="text-blue-400 font-bold">Auto-Scroll Enabled</span>
+                  </div>
+                </form>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

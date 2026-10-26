@@ -9,11 +9,11 @@ import {
   collection, query, orderBy, onSnapshot, 
   addDoc, updateDoc, deleteDoc, doc, setDoc, limit, arrayUnion, arrayRemove
 } from 'firebase/firestore';
-import { db, OperationType, handleFirestoreError } from '../lib/firebase';
+import { db, OperationType, handleFirestoreError, auth } from '../lib/firebase';
 import { Experience, Project, Certificate, Skill, Profile, Message, Visit, Blog, AppSettings, Specialization, ContactMethod } from '../types';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { auth } from '../lib/firebase';
 import { isVideoMedia, extractVideoInfo, captureVideoFrame, getProjectDisplayMedia } from '../lib/videoUtils';
+import { AVAILABLE_SERVICE_ICONS, getServiceIcon } from '../lib/iconMap';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'experience' | 'projects' | 'certificates' | 'skills' | 'specializations' | 'blogs' | 'contact' | 'settings' | 'messages' | 'analytics'>('profile');
@@ -48,7 +48,7 @@ export default function AdminPage() {
           { id: 'experience', label: 'Experience', icon: Briefcase },
           { id: 'projects', label: 'Projects', icon: FolderCode },
           { id: 'certificates', label: 'Certificates', icon: Award },
-          { id: 'skills', label: 'Skills/Services', icon: Cog },
+          { id: 'skills', label: 'Services', icon: Cog },
           { id: 'blogs', label: 'Blogs', icon: BookOpen },
           { id: 'contact', label: 'Contact Section', icon: Mail },
           { id: 'settings', label: 'Settings', icon: Settings },
@@ -759,8 +759,9 @@ function ExperienceEditor() {
         {items.map((item, index) => (
           <ListItem 
             key={item.id} 
-            title={item.company} 
-            subtitle={item.position} 
+            title={item.position || item.company} 
+            subtitle={item.position ? item.company : ''} 
+            imageUrl={item.imageUrl}
             onEdit={() => setEditing(item)} 
             onDelete={() => deleteDoc(doc(db, 'experiences', item.id!))}
             onMoveUp={() => handleMove(index, 'up')}
@@ -2110,41 +2111,238 @@ function AppSettingsEditor() {
 function SkillEditor() {
   const [items, setItems] = useState<Skill[]>([]);
   const [editing, setEditing] = useState<Skill | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'skills'), orderBy('order', 'asc'));
     return onSnapshot(q, (s) => setItems(s.docs.map(d => ({id: d.id, ...d.data()} as Skill))), (error) => handleFirestoreError(error, OperationType.GET, 'skills'));
   }, []);
 
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === items.length - 1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    const currentItem = items[index];
+    const targetItem = items[targetIndex];
+
+    if (!currentItem.id || !targetItem.id) return;
+
+    try {
+      await updateDoc(doc(db, 'skills', currentItem.id), { order: targetIndex });
+      await updateDoc(doc(db, 'skills', targetItem.id), { order: index });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'skills');
+    }
+  };
+
+  const seedDefaults = async () => {
+    setSeeding(true);
+    try {
+      const defaults = [
+        {
+          name: 'Penetration Testing & Red Teaming',
+          description: 'Comprehensive web application, network, and API penetration testing to identify vulnerabilities, simulate realistic adversary TTPs, and provide actionable remediation paths.',
+          icon: 'Crosshair',
+          order: 0
+        },
+        {
+          name: 'SOC Operations & SIEM Threat Monitoring',
+          description: '24/7 security monitoring, custom log correlation rules (Wazuh/Elastic), alert triage, and rapid threat containment to protect enterprise infrastructure.',
+          icon: 'Activity',
+          order: 1
+        },
+        {
+          name: 'Linux Infrastructure & Kernel Hardening',
+          description: 'Debian/Ubuntu server tuning, automated zero-trust security baselines, systemd isolation, network namespace routing, and custom security orchestration.',
+          icon: 'Terminal',
+          order: 2
+        },
+        {
+          name: 'Digital Forensics & Incident Response (DFIR)',
+          description: 'Deep-dive memory analysis using Volatility, network packet dissection, endpoint artifact recovery, root-cause investigation, and chain-of-custody documentation.',
+          icon: 'Search',
+          order: 3
+        },
+        {
+          name: 'AI & LLM Security Assessment',
+          description: 'Adversarial evaluation of generative AI pipelines, prompt injection defense, model extraction protection, context guardrail design, and OWASP Top 10 for LLMs auditing.',
+          icon: 'Cpu',
+          order: 4
+        },
+        {
+          name: 'Secure Network Architecture & Covert Channels',
+          description: 'Segmentation design, captive authentication portal engineering, firewall orchestration, and deployment of hardened P2P communication architectures.',
+          icon: 'Network',
+          order: 5
+        }
+      ];
+
+      for (const item of defaults) {
+        await addDoc(collection(db, 'skills'), item);
+      }
+      alert('Default services successfully imported into your database!');
+    } catch (error) {
+      console.error("Error seeding default services:", error);
+      handleFirestoreError(error, OperationType.WRITE, 'skills');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
     const { id, ...data } = editing;
-    if (id) await updateDoc(doc(db, 'skills', id), data);
-    else await addDoc(collection(db, 'skills'), data);
+    const cleanData = {
+      name: (data.name || '').trim(),
+      description: (data.description || '').trim(),
+      icon: data.icon || 'Shield',
+      iconUrl: (data.iconUrl || '').trim(),
+      order: Number(data.order) || 0
+    };
+    if (id) await updateDoc(doc(db, 'skills', id), cleanData);
+    else await addDoc(collection(db, 'skills'), cleanData);
     setEditing(null);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Skills</h2>
-        <button className="btn-secondary" onClick={() => setEditing({ category: '', name: '', level: 'Intermediate', order: items.length })}>
-          <Plus className="w-5 h-5 mr-2" /> Add
+        <div>
+          <h2 className="text-xl font-bold">Services</h2>
+          <p className="text-xs text-gray-500">Configure your technical services with customizable icons, names, and descriptions.</p>
+        </div>
+        <button 
+          className="btn-secondary" 
+          onClick={() => setEditing({ name: '', description: '', icon: 'Shield', iconUrl: '', order: items.length })}
+        >
+          <Plus className="w-5 h-5 mr-2" /> Add Service
         </button>
       </div>
+
+      {items.length === 0 && (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 space-y-4">
+          <p className="text-sm text-gray-400">
+            💡 <strong className="text-white">Default Services Active:</strong> Your public profile is currently displaying default cybersecurity services. To customize, add, edit, or delete them, click below to import them into your database.
+          </p>
+          <button
+            onClick={seedDefaults}
+            className="btn-primary text-xs flex items-center"
+            disabled={seeding}
+          >
+            {seeding ? (
+              <>
+                <Loader2 className="animate-spin w-4 h-4 mr-2" /> Importing...
+              </>
+            ) : (
+              'Import Default Services'
+            )}
+          </button>
+        </div>
+      )}
+
       <div className="space-y-4">
-        {items.map(item => (
-          <ListItem key={item.id} title={item.name} subtitle={item.category} onEdit={() => setEditing(item)} onDelete={() => deleteDoc(doc(db, 'skills', item.id!))} />
-        ))}
+        {items.map((item, index) => {
+          return (
+            <ListItem 
+              key={item.id} 
+              title={item.name} 
+              subtitle={item.description || (item.category ? `Category: ${item.category}` : '')} 
+              imageUrl={item.iconUrl}
+              onEdit={() => setEditing(item)} 
+              onDelete={() => deleteDoc(doc(db, 'skills', item.id!))}
+              onMoveUp={() => handleMove(index, 'up')}
+              onMoveDown={() => handleMove(index, 'down')}
+              isFirst={index === 0}
+              isLast={index === items.length - 1}
+            />
+          );
+        })}
       </div>
+
       {editing && (
-        <Modal title="Edit Skill" onClose={() => setEditing(null)} onSave={save}>
-          <div className="space-y-4">
-            <Input label="Category" value={editing.category} onChange={v => setEditing({...editing, category: v})} />
-            <Input label="Name" value={editing.name} onChange={v => setEditing({...editing, name: v})} />
-            <Input label="Level" value={editing.level} onChange={v => setEditing({...editing, level: v})} />
-            <Input label="Order" value={editing.order.toString()} onChange={v => setEditing({...editing, order: parseInt(v) || 0})} />
+        <Modal title={editing.id ? "Edit Service" : "Add Service"} onClose={() => setEditing(null)} onSave={save}>
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+            <Input 
+              label="Service Name" 
+              placeholder="e.g. Penetration Testing & Vulnerability Assessment"
+              value={editing.name || ''} 
+              onChange={v => setEditing({...editing, name: v})} 
+            />
+
+            <Input 
+              label="Service Description" 
+              placeholder="Describe what this service entails, methodologies used, and key deliverables..."
+              value={editing.description || ''} 
+              onChange={v => setEditing({...editing, description: v})} 
+              textarea 
+            />
+
+            {/* Customizable Icon Selector */}
+            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-blue-400">
+                  Customizable Icon
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-500 font-mono uppercase">Selected:</span>
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center p-1 border border-blue-500/30">
+                    {React.createElement(getServiceIcon(editing.icon), { className: "w-4 h-4" })}
+                  </div>
+                  <span className="text-xs font-mono font-bold text-white">{editing.icon || 'Shield'}</span>
+                </div>
+              </div>
+
+              {/* Grid of Selectable Icons */}
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-44 overflow-y-auto p-2 bg-black/40 rounded-xl border border-white/5 custom-scrollbar">
+                {AVAILABLE_SERVICE_ICONS.map((ico) => {
+                  const IconComp = ico.icon;
+                  const isSelected = (editing.icon || 'Shield') === ico.id;
+                  return (
+                    <button
+                      key={ico.id}
+                      type="button"
+                      onClick={() => setEditing({ ...editing, icon: ico.id })}
+                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all text-center cursor-pointer group ${
+                        isSelected 
+                          ? 'bg-blue-600 text-white border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105' 
+                          : 'bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20'
+                      }`}
+                      title={ico.label}
+                    >
+                      <IconComp className="w-5 h-5 mb-1 group-hover:scale-110 transition-transform" />
+                      <span className="text-[8px] font-mono truncate w-full">{ico.id}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="pt-2">
+                <Input 
+                  label="Or Enter Custom Icon Name" 
+                  placeholder="e.g. Shield, Terminal, Lock, Cpu, Crosshair..." 
+                  value={editing.icon || ''} 
+                  onChange={v => setEditing({ ...editing, icon: v })} 
+                />
+              </div>
+
+              <div className="pt-2 border-t border-white/5">
+                <ImageUpload 
+                  label="Or Upload Custom Icon Image (Optional SVG/PNG)" 
+                  value={editing.iconUrl || ''} 
+                  onChange={v => setEditing({ ...editing, iconUrl: v })} 
+                  path="service_icon" 
+                  targetId={editing.id || 'new'}
+                />
+              </div>
+            </div>
+
+            <Input 
+              label="Display Order" 
+              value={(editing.order ?? 0).toString()} 
+              onChange={v => setEditing({...editing, order: parseInt(v) || 0})} 
+            />
           </div>
         </Modal>
       )}
@@ -2327,14 +2525,14 @@ function ResourceCard({ name, status, items, usage, limit }: { name: string; sta
   );
 }
 
-function Input({ label, value, onChange, textarea, type = "text" }: { label: string; value: string; onChange: (v: string) => void; textarea?: boolean; type?: string }) {
+function Input({ label, value, onChange, textarea, type = "text", placeholder }: { label: string; value: string; onChange: (v: string) => void; textarea?: boolean; type?: string; placeholder?: string }) {
   return (
     <div className="space-y-2">
       <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">{label}</label>
       {textarea ? (
-        <textarea className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all" value={value} onChange={e => onChange(e.target.value)} rows={3} />
+        <textarea placeholder={placeholder} className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all" value={value} onChange={e => onChange(e.target.value)} rows={3} />
       ) : (
-        <input type={type} className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all" value={value} onChange={e => onChange(e.target.value)} />
+        <input placeholder={placeholder} type={type} className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all" value={value} onChange={e => onChange(e.target.value)} />
       )}
     </div>
   );

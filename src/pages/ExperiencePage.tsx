@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Briefcase, MapPin, Calendar, CheckCircle2, ExternalLink } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
@@ -15,6 +16,7 @@ export default function ExperiencePage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -45,6 +47,33 @@ export default function ExperiencePage() {
       unsubSettings();
     };
   }, []);
+
+  // Handle deep-link scrolling via query parameter ?exp=...
+  useEffect(() => {
+    if (!loading && experiences.length > 0) {
+      const expParam = searchParams.get('exp');
+      if (expParam) {
+        const target = expParam.toLowerCase().trim();
+        setTimeout(() => {
+          let el = document.getElementById(`exp-${target}`) || 
+                   document.querySelector(`[data-exp-alias="${target}"]`) ||
+                   document.querySelector(`[data-exp-name*="${target}"]`);
+          
+          if (!el) {
+            if (target.includes('solar') || target.includes('aidaroos')) el = document.getElementById('exp-solar');
+            else if (target.includes('tamkeen')) el = document.getElementById('exp-tamkeen');
+            else if (target.includes('newtek')) el = document.getElementById('exp-newtek');
+          }
+
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('cyber-teleport-glow');
+            setTimeout(() => el.classList.remove('cyber-teleport-glow'), 3500);
+          }
+        }, 300);
+      }
+    }
+  }, [loading, experiences, searchParams]);
 
   if (loading) {
     return (
@@ -95,6 +124,9 @@ export default function ExperiencePage() {
                   }`}>
                     {isLeft && (
                       <motion.div
+                        id={((exp.company || '').toLowerCase().includes('solar') || (exp.company || '').toLowerCase().includes('aidaroos')) ? 'exp-solar' : ((exp.company || '').toLowerCase().includes('tamkeen')) ? 'exp-tamkeen' : ((exp.company || '').toLowerCase().includes('newtek')) ? 'exp-newtek' : `exp-${exp.id || i}`}
+                        data-exp-alias={((exp.company || '').toLowerCase().includes('solar') || (exp.company || '').toLowerCase().includes('aidaroos')) ? 'exp-solar' : ((exp.company || '').toLowerCase().includes('tamkeen')) ? 'exp-tamkeen' : ((exp.company || '').toLowerCase().includes('newtek')) ? 'exp-newtek' : `exp-${exp.id || i}`}
+                        data-exp-name={(exp.company || '').toLowerCase()}
                         initial={{ opacity: 0, x: -50, scale: 0.95 }}
                         whileInView={{ opacity: 1, x: 0, scale: 1 }}
                         viewport={{ once: false, margin: "-10%" }}
@@ -112,8 +144,8 @@ export default function ExperiencePage() {
                               </div>
                             )}
                             <div>
-                              <h3 className="text-lg font-extrabold text-blue-500 leading-tight uppercase tracking-tight">{exp.company}</h3>
-                              <p className="font-bold text-sm text-gray-800 dark:text-gray-200 mt-0.5">{exp.position}</p>
+                              <h3 className="text-lg font-extrabold text-blue-500 leading-tight uppercase tracking-tight">{exp.position}</h3>
+                              <p className="font-bold text-sm text-gray-800 dark:text-gray-200 mt-0.5">{exp.company}</p>
                             </div>
                           </div>
 
@@ -171,6 +203,9 @@ export default function ExperiencePage() {
                   }`}>
                     {!isLeft && (
                       <motion.div
+                        id={((exp.company || '').toLowerCase().includes('solar') || (exp.company || '').toLowerCase().includes('aidaroos')) ? 'exp-solar' : ((exp.company || '').toLowerCase().includes('tamkeen')) ? 'exp-tamkeen' : ((exp.company || '').toLowerCase().includes('newtek')) ? 'exp-newtek' : `exp-${exp.id || i}`}
+                        data-exp-alias={((exp.company || '').toLowerCase().includes('solar') || (exp.company || '').toLowerCase().includes('aidaroos')) ? 'exp-solar' : ((exp.company || '').toLowerCase().includes('tamkeen')) ? 'exp-tamkeen' : ((exp.company || '').toLowerCase().includes('newtek')) ? 'exp-newtek' : `exp-${exp.id || i}`}
+                        data-exp-name={(exp.company || '').toLowerCase()}
                         initial={{ opacity: 0, x: 50, scale: 0.95 }}
                         whileInView={{ opacity: 1, x: 0, scale: 1 }}
                         viewport={{ once: false, margin: "-10%" }}
@@ -188,8 +223,8 @@ export default function ExperiencePage() {
                               </div>
                             )}
                             <div>
-                              <h3 className="text-lg font-extrabold text-blue-500 leading-tight uppercase tracking-tight">{exp.company}</h3>
-                              <p className="font-bold text-sm text-gray-800 dark:text-gray-200 mt-0.5">{exp.position}</p>
+                              <h3 className="text-lg font-extrabold text-blue-500 leading-tight uppercase tracking-tight">{exp.position}</h3>
+                              <p className="font-bold text-sm text-gray-800 dark:text-gray-200 mt-0.5">{exp.company}</p>
                             </div>
                           </div>
 

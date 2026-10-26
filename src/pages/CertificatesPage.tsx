@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Award, Calendar, ExternalLink, ShieldCheck, Eye, BookOpen, X, DollarSign } from 'lucide-react';
@@ -50,7 +51,18 @@ export default function CertificatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
+  const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
+
+  const getCertAnchor = (cert: Certificate) => {
+    const name = (cert.name || '').toLowerCase();
+    if (name.includes('mcbta') || name.includes('multi-cloud')) return 'cert-mcbta';
+    if (name.includes('c3sa') || name.includes('certified cyber security analyst')) return 'cert-c3sa';
+    if (name.includes('btf') || name.includes('blue team fundamentals')) return 'cert-btf';
+    if (name.includes('apisec') || name.includes('api')) return 'cert-apisec';
+    if (name.includes('jvp') || name.includes('junior vulnerability')) return 'cert-jvp';
+    return `cert-${cert.id || name.replace(/[^a-z0-9]/g, '-')}`;
+  };
 
   useEffect(() => {
     if (selectedCert) {
@@ -89,6 +101,35 @@ export default function CertificatesPage() {
       unsubSettings();
     };
   }, []);
+
+  // Handle ?cert=... or ?id=... deep linking and auto-scrolling
+  useEffect(() => {
+    if (!loading && items.length > 0) {
+      const certParam = searchParams.get('cert') || searchParams.get('id');
+      if (certParam) {
+        const q = certParam.toLowerCase().trim();
+        setTimeout(() => {
+          let el = document.getElementById(`cert-${q}`) || 
+                   document.querySelector(`[data-cert-alias="${q}"]`) ||
+                   document.querySelector(`[data-cert-name*="${q}"]`);
+          
+          if (!el) {
+            if (q.includes('mcbta') || q.includes('multi-cloud')) el = document.getElementById('cert-mcbta');
+            else if (q.includes('c3sa')) el = document.getElementById('cert-c3sa');
+            else if (q.includes('btf')) el = document.getElementById('cert-btf');
+            else if (q.includes('apisec') || q.includes('api')) el = document.getElementById('cert-apisec');
+            else if (q.includes('jvp')) el = document.getElementById('cert-jvp');
+          }
+
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('cyber-teleport-glow');
+            setTimeout(() => el.classList.remove('cyber-teleport-glow'), 3500);
+          }
+        }, 300);
+      }
+    }
+  }, [loading, items, searchParams]);
 
   // Dynamically update document title based on selected certificate
   useEffect(() => {
@@ -149,11 +190,16 @@ export default function CertificatesPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {items.map((cert) => (
-          <div
-            key={cert.id}
-            className="glass-md overflow-hidden rounded-[2.5rem] flex flex-col hover:shadow-2xl transition-all duration-500 group relative"
-          >
+        {items.map((cert) => {
+          const anchorId = getCertAnchor(cert);
+          return (
+            <div
+              key={cert.id}
+              id={anchorId}
+              data-cert-alias={anchorId}
+              data-cert-name={(cert.name || '').toLowerCase()}
+              className="glass-md overflow-hidden rounded-[2.5rem] flex flex-col hover:shadow-2xl transition-all duration-500 group relative"
+            >
             {cert.inProgress && (
               <div className="absolute inset-0 bg-[#0a0a0c]/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-[2.5rem]">
                 <div className="bg-blue-600 dark:bg-blue-500 text-white font-mono font-black text-xs uppercase tracking-[0.25em] px-5 py-3 rounded-full border border-white/10 shadow-[0_0_30px_rgba(59,130,246,0.4)]">
@@ -237,7 +283,7 @@ export default function CertificatesPage() {
               );
             })()}
           </div>
-        ))}
+        );})}
       </div>
 
       {/* Certificate Details Modal Portal */}
