@@ -346,9 +346,6 @@ export default function Layout({ children }: LayoutProps) {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               &copy; {new Date().getFullYear()} Abdulrahman Kamal. {t('rights')}
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-600 mt-2 font-mono">
-              {t('crafted')}
-            </p>
           </div>
         </footer>
       </div>

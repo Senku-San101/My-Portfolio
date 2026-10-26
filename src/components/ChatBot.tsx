@@ -9,6 +9,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Profile, AppSettings } from '../types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface NavigationAction {
   path: string;
@@ -381,7 +383,61 @@ export default function ChatBot() {
                           ? 'bg-blue-600 text-white rounded-tr-none' 
                           : 'bg-white/10 dark:bg-white/5 text-white/90 rounded-tl-none border border-white/10 backdrop-blur-md'
                       }`}>
-                        <div className="whitespace-pre-wrap">{msg.parts[0].text}</div>
+                        {msg.role === 'user' ? (
+                          <div className="whitespace-pre-wrap">{msg.parts[0].text}</div>
+                        ) : (
+                          <div className="markdown-chat text-xs md:text-sm leading-relaxed text-gray-100">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({ children }) => <p className="mb-2.5 last:mb-0 leading-relaxed">{children}</p>,
+                                strong: ({ children }) => <strong className="font-extrabold text-white tracking-wide">{children}</strong>,
+                                em: ({ children }) => <em className="italic text-blue-200">{children}</em>,
+                                ul: ({ children }) => <ul className="list-disc list-outside mb-2.5 space-y-1 ps-4 text-gray-200">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-outside mb-2.5 space-y-1 ps-4 text-gray-200">{children}</ol>,
+                                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                                h1: ({ children }) => <h1 className="text-sm md:text-base font-black text-blue-400 mt-3 mb-1.5 uppercase tracking-wider">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-xs md:text-sm font-bold text-blue-400 mt-2.5 mb-1 uppercase tracking-wide">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-xs font-bold text-blue-300 mt-2 mb-1 uppercase tracking-wide">{children}</h3>,
+                                code: ({ inline, className, children, ...props }: any) => {
+                                  if (inline) {
+                                    return (
+                                      <code className="px-1.5 py-0.5 rounded bg-black/60 text-blue-300 font-mono text-[11px] border border-blue-500/20" {...props}>
+                                        {children}
+                                      </code>
+                                    );
+                                  }
+                                  return (
+                                    <code className="block p-3 my-2.5 rounded-xl bg-black/70 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-white/10 leading-normal" {...props}>
+                                      {children}
+                                    </code>
+                                  );
+                                },
+                                pre: ({ children }) => <pre className="my-2 overflow-x-auto rounded-xl bg-black/70 border border-white/10 p-2 text-xs font-mono">{children}</pre>,
+                                blockquote: ({ children }) => (
+                                  <blockquote className="border-l-2 border-blue-500 pl-3 my-2 text-gray-300 italic text-xs bg-blue-500/5 py-1 rounded-r-lg">
+                                    {children}
+                                  </blockquote>
+                                ),
+                                a: ({ href, children }) => (
+                                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-2 font-medium">
+                                    {children}
+                                  </a>
+                                ),
+                                table: ({ children }) => (
+                                  <div className="overflow-x-auto my-2 border border-white/10 rounded-lg">
+                                    <table className="w-full text-[11px] text-left border-collapse">{children}</table>
+                                  </div>
+                                ),
+                                th: ({ children }) => <th className="border-b border-white/10 p-1.5 font-bold bg-white/5 text-blue-300">{children}</th>,
+                                td: ({ children }) => <td className="border-b border-white/5 p-1.5 text-gray-300">{children}</td>,
+                                hr: () => <hr className="my-2.5 border-white/10" />
+                              }}
+                            >
+                              {msg.parts[0].text}
+                            </ReactMarkdown>
+                          </div>
+                        )}
 
                         {/* Interactive Teleport Badge */}
                         {msg.navAction && (
