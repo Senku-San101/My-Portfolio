@@ -15,6 +15,7 @@ export const translations: Translations = {
   projects: { en: 'Projects', ar: 'المشاريع' },
   certificates: { en: 'Certificates', ar: 'الشهادات' },
   skills: { en: 'Services', ar: 'الخدمات' },
+  arsenalNav: { en: 'Arsenal', ar: 'الترسانة' },
   blog: { en: 'Blogs', ar: 'المدونة' },
   contactNav: { en: 'Contact', ar: 'اتصل بي' },
   signIn: { en: 'Sign In', ar: 'تسجيل الدخول' },

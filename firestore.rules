@@ -65,5 +65,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    match /ops_vault/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

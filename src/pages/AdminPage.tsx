@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Plus, Trash2, Save, User, Briefcase, Award, FolderCode, Cog, ChevronRight, ChevronUp, ChevronDown, X, Image as ImageIcon, Loader2, ArrowLeft, Mail, Activity, BookOpen, Settings, Lock, Eye, Key, ShieldCheck, Brain, FileText, Upload, CheckCircle2, Cpu, Copy, Clock, Globe, Phone, MessageSquare, Linkedin, Github, Video, Play
+  Plus, Trash2, Save, User, Briefcase, Award, FolderCode, Cog, ChevronRight, ChevronUp, ChevronDown, X, Image as ImageIcon, Loader2, ArrowLeft, Mail, Activity, BookOpen, Settings, Lock, Eye, Key, ShieldCheck, Brain, FileText, Upload, CheckCircle2, Cpu, Copy, Clock, Globe, Phone, MessageSquare, Linkedin, Github, Video, Play, Terminal
 } from 'lucide-react';
 import { 
   collection, query, orderBy, onSnapshot, 
@@ -14,9 +14,10 @@ import { Experience, Project, Certificate, Skill, Profile, Message, Visit, Blog,
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { isVideoMedia, extractVideoInfo, captureVideoFrame, getProjectDisplayMedia } from '../lib/videoUtils';
 import { AVAILABLE_SERVICE_ICONS, getServiceIcon } from '../lib/iconMap';
+import OpsVaultEditor from '../components/admin/OpsVaultEditor';
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'experience' | 'projects' | 'certificates' | 'skills' | 'specializations' | 'blogs' | 'contact' | 'settings' | 'messages' | 'analytics'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'experience' | 'projects' | 'certificates' | 'skills' | 'specializations' | 'blogs' | 'contact' | 'settings' | 'messages' | 'analytics' | 'ops_vault'>('profile');
 
   useEffect(() => {
     document.title = `Admin | ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
@@ -49,6 +50,7 @@ export default function AdminPage() {
           { id: 'projects', label: 'Projects', icon: FolderCode },
           { id: 'certificates', label: 'Certificates', icon: Award },
           { id: 'skills', label: 'Services', icon: Cog },
+          { id: 'ops_vault', label: 'Cyber Ops & Vault', icon: Terminal },
           { id: 'blogs', label: 'Blogs', icon: BookOpen },
           { id: 'contact', label: 'Contact Section', icon: Mail },
           { id: 'settings', label: 'Settings', icon: Settings },
@@ -78,6 +80,7 @@ export default function AdminPage() {
           {activeTab === 'projects' && <ProjectEditor key="projects" />}
           {activeTab === 'certificates' && <CertificateEditor key="certificates" />}
           {activeTab === 'skills' && <SkillEditor key="skills" />}
+          {activeTab === 'ops_vault' && <OpsVaultEditor key="ops_vault" />}
           {activeTab === 'blogs' && <BlogEditor key="blogs" />}
           {activeTab === 'contact' && <ContactSectionEditor key="contact" />}
           {activeTab === 'settings' && <AppSettingsEditor key="settings" />}

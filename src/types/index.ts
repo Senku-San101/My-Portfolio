@@ -148,3 +148,66 @@ export interface AppSettings {
   socialImage?: string;
   showVideoThumbnailAsProjectImage?: boolean;
 }
+
+export type VaultCategory = 
+  | 'linux' | 'soc' | 'reversing' | 'network' | 'web' | 'cloud' | 'general'
+  | 'linux-hardening' | 'soc-wazuh' | 'gdb-reversing' | 'network-recon' | 'web-api-sec' | 'crypto-forensics' | 'cloud-security';
+
+export interface VaultItem {
+  id?: string;
+  title: string;
+  category: VaultCategory;
+  command: string;
+  description?: string;
+  explanation?: string;
+  dangerLevel?: 'low' | 'medium' | 'critical';
+  tags: string[];
+  isPublic?: boolean;
+  order?: number;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface HeaderAuditItem {
+  header: string;
+  present: boolean;
+  configured?: boolean;
+  value?: string;
+  status: 'good' | 'warning' | 'critical' | 'info';
+  severity?: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+  recommendation?: string;
+  exampleValue?: string;
+}
+
+export interface HeaderAuditResult {
+  url: string;
+  targetUrl?: string;
+  timestamp: string;
+  score: number; // 0 to 100
+  grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+  statusDescription?: string;
+  statusCode?: number;
+  responseTimeMs?: number;
+  headers: Record<string, string>;
+  analysis: HeaderAuditItem[];
+  items: HeaderAuditItem[];
+  configuredHeaders: string[];
+  missingHeaders: string[];
+  serverLeaks: {
+    server?: string;
+    poweredBy?: string;
+    detected: boolean;
+  };
+  infoLeakage: {
+    server?: string;
+    poweredBy?: string;
+    hasLeak: boolean;
+  };
+  recommendedSnippets: {
+    nginx: string;
+    apache: string;
+    caddy: string;
+  };
+}
+

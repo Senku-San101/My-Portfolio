@@ -394,6 +394,13 @@ Routes and Target IDs Reference:
   * Linux Kernel Architecture: [[NAVIGATE:/blog?blog=linux|blog-view|Linux Architecture Writeup]]
   * All blogs list: [[NAVIGATE:/blog||Technical Blogs]]
 
+- CYBER OPS DECK & ARSENAL (/arsenal):
+  * Security Headers Scanner: [[NAVIGATE:/arsenal?tab=headers||Security Headers Scanner]]
+  * Subnet & CIDR Calculator: [[NAVIGATE:/arsenal?tab=subnet||Subnet CIDR Matrix]]
+  * Crypto, Hashes & JWT: [[NAVIGATE:/arsenal?tab=crypto||Crypto & Hash Workbench]]
+  * Command & Payload Vault: [[NAVIGATE:/arsenal?tab=vault||Cyber Command Vault]]
+  * Arsenal Deck Overview: [[NAVIGATE:/arsenal||Cyber Ops Arsenal]]
+
 - PROFILE & CONTACT:
   * Bio & Hero: [[NAVIGATE:/|profile-hero|Profile & Bio]]
   * Core Specializations: [[NAVIGATE:/|specializations|Specializations]]

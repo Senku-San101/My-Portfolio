@@ -33,6 +33,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/ops/analyze-headers"
+  to = "/.netlify/functions/analyze-headers"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

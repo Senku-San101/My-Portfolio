@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, ReactNode, useRef } from 'react';
-import { Shield, Briefcase, Award, FolderCode, User, Cog, LogOut, Sun, Moon, Languages, BookOpen, FileText, Menu, X, Mail } from 'lucide-react';
+import { Shield, Briefcase, Award, FolderCode, User, Cog, LogOut, Sun, Moon, Languages, BookOpen, FileText, Menu, X, Mail, Terminal } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -102,9 +102,12 @@ export default function Layout({ children }: LayoutProps) {
 
   const defaultDesktopNav = ['about', 'blog', 'experience', 'projects', 'certificates', 'skills', 'contact'];
   
-  // Always include contact page if missing
+  // Always include contact if missing from customized order, exclude arsenal from public nav
   const desktopOrderKeys = settings?.desktopNavOrder && settings.desktopNavOrder.length > 0 
-    ? [...settings.desktopNavOrder, !settings.desktopNavOrder.includes('contact') && 'contact'].filter(Boolean) as string[]
+    ? [
+        ...settings.desktopNavOrder.filter((k: string) => k !== 'arsenal'), 
+        !settings.desktopNavOrder.includes('contact') && 'contact'
+      ].filter(Boolean) as string[]
     : defaultDesktopNav;
 
   const navItems = desktopOrderKeys

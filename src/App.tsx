@@ -19,6 +19,7 @@ import CertificatesPage from './pages/CertificatesPage';
 import SkillsPage from './pages/SkillsPage';
 import BlogsPage from './pages/BlogsPage';
 import ContactPage from './pages/ContactPage';
+import ArsenalPage from './pages/ArsenalPage';
 import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 
@@ -127,6 +128,19 @@ function AnimatedRoutes({ user }: { user: any }) {
             >
               <CyberTransition />
               <ContactPage />
+            </motion.div>
+          } 
+        />
+        <Route 
+          path="/arsenal" 
+          element={
+            <motion.div 
+              key={location.pathname} 
+              exit={{ x: 50, opacity: 0 }} 
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+            >
+              <CyberTransition />
+              <ArsenalPage />
             </motion.div>
           } 
         />

@@ -5,6 +5,7 @@ import multer from "multer";
 import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
 import { buildChatSystemInstruction } from "./src/lib/abdulrahmanKnowledge";
+import { analyzeSecurityHeaders } from "./src/lib/headerAnalyzer";
 
 // Safe __dirname and __filename for both ESM and CJS bundling
 const __appFilename = typeof __filename !== "undefined" ? __filename : process.cwd();
@@ -223,6 +224,54 @@ async function startServer() {
       });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to read blob storage", message: error.message });
+    }
+  });
+
+  // Security Operations Deck: HTTP Security Headers Prober
+  app.post("/api/ops/analyze-headers", async (req, res) => {
+    try {
+      const targetUrl = req.body.url || req.body.targetUrl;
+      if (!targetUrl || typeof targetUrl !== "string") {
+        return res.status(400).json({ error: "Target URL is required" });
+      }
+
+      let parsedUrl = targetUrl.trim();
+      if (!parsedUrl.startsWith("http://") && !parsedUrl.startsWith("https://")) {
+        parsedUrl = `https://${parsedUrl}`;
+      }
+
+      console.log(`[Header Analyzer] Auditing headers for: ${parsedUrl}`);
+
+      let response: Response;
+      try {
+        response = await fetch(parsedUrl, {
+          method: "HEAD",
+          redirect: "follow",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) CyberOpsAudit/1.0",
+          },
+        });
+      } catch (headErr) {
+        // Fallback to GET if HEAD method is unsupported
+        response = await fetch(parsedUrl, {
+          method: "GET",
+          redirect: "follow",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) CyberOpsAudit/1.0",
+          },
+        });
+      }
+
+      const headersMap: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        headersMap[key.toLowerCase()] = value;
+      });
+
+      const audit = analyzeSecurityHeaders(headersMap, parsedUrl, response.status);
+      res.json(audit);
+    } catch (err: any) {
+      console.error("[Header Analyzer Error]:", err.message);
+      res.status(500).json({ error: "Failed to probe host", message: err.message });
     }
   });
 
