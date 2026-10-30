@@ -1,41 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
-import { Lock, User, ShieldAlert, Loader2, Mail, Key, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Lock, User, ShieldAlert, Loader2, Eye, EyeOff } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { 
+  getLoginLockoutStatus, recordFailedLoginAttempt, clearLoginLockout, recordSuccessfulLogin 
+} from '../lib/securityLogger';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lockout, setLockout] = useState(() => getLoginLockoutStatus());
+
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.title = 'Abdulrahman Kamal | Login';
   }, []);
+
+  // Background lockout timer check (silent, no telemetry display)
+  useEffect(() => {
+    if (!lockout.isLocked) return;
+
+    const interval = setInterval(() => {
+      const current = getLoginLockoutStatus();
+      setLockout(current);
+      if (!current.isLocked) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockout.isLocked]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Check silent lockout
+    if (lockout.isLocked) {
+      setError('Too many failed attempts. Please wait a moment before trying again.');
+      return;
+    }
+
+    const cleanUser = username.trim().toLowerCase();
+    const cleanPass = password;
+
+    if (!cleanUser || !cleanPass) {
+      setError('Invalid login credentials.');
+      return;
+    }
+
     setLoading(true);
 
-    if (username.toLowerCase() === 'abdo' || username.toLowerCase() === 'abdo@kamal.portfolio') {
-      try {
-        await signInWithEmailAndPassword(auth, 'abdo@kamal.portfolio', password);
-        navigate('/admin');
-      } catch (err: any) {
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-          setError('Invalid login credentials. If you just changed your password, make sure you are using the new one. Also/Otherwise, ensure "abdo@kamal.portfolio" is registered in your Firebase console.');
-        } else {
-          setError('Login failed: ' + err.message);
-        }
-      }
+    // Resolve target identity
+    let targetEmail = '';
+    if (cleanUser === 'abdo' || cleanUser === 'admin' || cleanUser === 'abdo@kamal.portfolio') {
+      targetEmail = 'abdo@kamal.portfolio';
+    } else if (cleanUser === '000means000@gmail.com') {
+      targetEmail = '000means000@gmail.com';
+    } else if (cleanUser.includes('@')) {
+      targetEmail = cleanUser;
     } else {
-      setError('Invalid identity credentials.');
+      targetEmail = 'abdo@kamal.portfolio';
     }
-    setLoading(false);
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, targetEmail, cleanPass);
+      
+      // Clear lockout state on success
+      clearLoginLockout();
+
+      // Silently record successful login with full telemetry to Firestore
+      await recordSuccessfulLogin(userCredential.user, {
+        authMethod: 'Password Authentication',
+      });
+
+      navigate('/admin');
+    } catch (err: any) {
+      // Record failed attempt internally for rate limiting
+      const newLockout = recordFailedLoginAttempt();
+      setLockout(newLockout);
+
+      if (newLockout.isLocked) {
+        setError('Too many failed attempts. Please wait a moment before trying again.');
+      } else {
+        setError('Invalid login credentials.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,8 +103,8 @@ export default function LoginPage() {
         animate={{ opacity: 1, scale: 1 }}
         className="glass-xl w-full max-w-[440px] p-10 rounded-[3rem] shadow-2xl relative overflow-hidden"
       >
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
           <div className="flex justify-center mb-8">
@@ -62,13 +120,17 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="block text-[11px] font-bold uppercase tracking-[2px] text-gray-400 ml-1">Identity</label>
+              <label className="block text-[11px] font-bold uppercase tracking-[2px] text-gray-400 ml-1">
+                Identity
+              </label>
               <div className="relative group">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 <input
                   type="text"
+                  disabled={loading}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
                   className="w-full pl-12 pr-6 py-4 glass-sm rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all font-medium"
                   placeholder="Username"
                   required
@@ -77,17 +139,29 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-[11px] font-bold uppercase tracking-[2px] text-gray-400 ml-1">Keycode</label>
+              <label className="block text-[11px] font-bold uppercase tracking-[2px] text-gray-400 ml-1">
+                Keycode
+              </label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
+                  disabled={loading}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-6 py-4 glass-sm rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all font-medium"
+                  autoComplete="current-password"
+                  className="w-full pl-12 pr-12 py-4 glass-sm rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all font-medium"
                   placeholder="••••••••"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 

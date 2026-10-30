@@ -15,9 +15,10 @@ import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 
 import { isVideoMedia, extractVideoInfo, captureVideoFrame, getProjectDisplayMedia } from '../lib/videoUtils';
 import { AVAILABLE_SERVICE_ICONS, getServiceIcon } from '../lib/iconMap';
 import OpsVaultEditor from '../components/admin/OpsVaultEditor';
+import SecurityLogsViewer from '../components/admin/SecurityLogsViewer';
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'experience' | 'projects' | 'certificates' | 'skills' | 'specializations' | 'blogs' | 'contact' | 'settings' | 'messages' | 'analytics' | 'ops_vault'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'experience' | 'projects' | 'certificates' | 'skills' | 'specializations' | 'blogs' | 'contact' | 'settings' | 'messages' | 'analytics' | 'ops_vault' | 'security_logs'>('profile');
 
   useEffect(() => {
     document.title = `Admin | ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
@@ -51,6 +52,7 @@ export default function AdminPage() {
           { id: 'certificates', label: 'Certificates', icon: Award },
           { id: 'skills', label: 'Services', icon: Cog },
           { id: 'ops_vault', label: 'Cyber Ops & Vault', icon: Terminal },
+          { id: 'security_logs', label: 'Login Logs', icon: ShieldCheck },
           { id: 'blogs', label: 'Blogs', icon: BookOpen },
           { id: 'contact', label: 'Contact Section', icon: Mail },
           { id: 'settings', label: 'Settings', icon: Settings },
@@ -81,6 +83,7 @@ export default function AdminPage() {
           {activeTab === 'certificates' && <CertificateEditor key="certificates" />}
           {activeTab === 'skills' && <SkillEditor key="skills" />}
           {activeTab === 'ops_vault' && <OpsVaultEditor key="ops_vault" />}
+          {activeTab === 'security_logs' && <SecurityLogsViewer key="security_logs" />}
           {activeTab === 'blogs' && <BlogEditor key="blogs" />}
           {activeTab === 'contact' && <ContactSectionEditor key="contact" />}
           {activeTab === 'settings' && <AppSettingsEditor key="settings" />}

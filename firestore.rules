@@ -70,5 +70,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Security Audit Login Logs (No tampering allowed, only admin can view or master purge)
+    match /login_logs/{id} {
+      allow create: if request.auth != null;
+      allow read: if isAdmin();
+      allow update: if false; // Immutable audit log
+      allow delete: if isAdmin(); // Only admin can delete via master purge
+    }
   }
 }

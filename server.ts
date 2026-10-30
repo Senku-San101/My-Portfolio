@@ -93,6 +93,26 @@ async function startServer() {
     res.json({ status: "ok", mode: process.env.NODE_ENV || "development" });
   });
 
+  // Client network & identity info for security auditing and login logging
+  app.get("/api/auth/client-info", (req, res) => {
+    const forwarded = req.headers["x-forwarded-for"];
+    let clientIp = typeof forwarded === "string" 
+      ? forwarded.split(",")[0].trim() 
+      : (req.socket.remoteAddress || "127.0.0.1");
+    
+    // Normalize IPv6 mapped IPv4 localhost
+    if (clientIp === "::1" || clientIp === "::ffff:127.0.0.1") {
+      clientIp = "127.0.0.1";
+    }
+
+    res.json({
+      ip: clientIp,
+      userAgent: req.headers["user-agent"] || "",
+      language: req.headers["accept-language"] || "",
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Serve uploads directory - try both persistent and fallback
   // Serve uploads directory - try both persistent and fallback
   app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));

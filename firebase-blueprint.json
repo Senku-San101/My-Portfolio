@@ -149,6 +149,31 @@
         "path": { "type": "string" }
       },
       "required": ["sessionId", "startTime"]
+    },
+    "login_log": {
+      "title": "LoginLog",
+      "description": "Immutable security records of successful admin logins",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "isoDate": { "type": "string" },
+        "ip": { "type": "string" },
+        "city": { "type": "string" },
+        "country": { "type": "string" },
+        "countryCode": { "type": "string" },
+        "region": { "type": "string" },
+        "isp": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "browser": { "type": "string" },
+        "os": { "type": "string" },
+        "device": { "type": "string" },
+        "status": { "type": "string" },
+        "authMethod": { "type": "string" },
+        "fingerprint": { "type": "string" }
+      },
+      "required": ["email", "status"]
     }
   },
   "firestore": {
@@ -191,6 +216,10 @@
     "settings/config": {
       "schema": "settings",
       "description": "Global application configuration"
+    },
+    "login_logs/{logId}": {
+      "schema": "login_log",
+      "description": "Security audit records of successful admin logins"
     }
   }
 }

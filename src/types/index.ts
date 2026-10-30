@@ -211,3 +211,24 @@ export interface HeaderAuditResult {
   };
 }
 
+export interface LoginLog {
+  id?: string;
+  email: string;
+  userId?: string;
+  timestamp: any;
+  isoDate?: string;
+  ip?: string;
+  city?: string;
+  country?: string;
+  countryCode?: string;
+  region?: string;
+  isp?: string;
+  userAgent?: string;
+  browser?: string;
+  os?: string;
+  device?: string;
+  screenResolution?: string;
+  status: 'success';
+  authMethod: string;
+  fingerprint?: string;
+}
