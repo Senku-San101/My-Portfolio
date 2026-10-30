@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Plus, Trash2, Save, User, Briefcase, Award, FolderCode, Cog, ChevronRight, ChevronUp, ChevronDown, X, Image as ImageIcon, Loader2, ArrowLeft, Mail, Activity, BookOpen, Settings, Lock, Eye, Key, ShieldCheck, Brain, FileText, Upload, CheckCircle2, Cpu, Copy, Clock, Globe, Phone, MessageSquare, Linkedin, Github, Video, Play, Terminal
+  Plus, Trash2, Save, User, Briefcase, Award, FolderCode, Cog, ChevronRight, ChevronUp, ChevronDown, X, Image as ImageIcon, Loader2, ArrowLeft, Mail, Activity, BookOpen, Settings, Lock, Eye, Key, ShieldCheck, Brain, FileText, Upload, CheckCircle2, Cpu, Copy, Clock, Globe, Phone, MessageSquare, Linkedin, Github, Video, Play, Terminal, Search, Laptop, Smartphone, Check
 } from 'lucide-react';
 import { 
   collection, query, orderBy, onSnapshot, 
@@ -97,18 +97,15 @@ export default function AdminPage() {
 
 function AnalyticsViewer() {
   const [items, setItems] = useState<Visit[]>([]);
-  const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
+  const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (selectedVisit) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [selectedVisit]);
+  const copyVal = (key: string, val: string) => {
+    navigator.clipboard.writeText(val);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 1500);
+  };
   const [counts, setCounts] = useState({
     projects: 0,
     certificates: 0,
@@ -267,295 +264,369 @@ function AnalyticsViewer() {
       </div>
 
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">Signal History</h2>
-          <button 
-            onClick={wipeLogs}
-            disabled={items.length === 0}
-            className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 px-4 py-2 rounded-full border border-red-500/20 disabled:opacity-50 transition-all"
-          >
-            Wipe Access Logs
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Activity className="w-5 h-5 text-blue-500" />
+              <span>Signal History</span>
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Real-time telemetry and network footprint from website visitors.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={wipeLogs}
+              disabled={items.length === 0}
+              className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 px-4 py-2 rounded-full border border-red-500/20 disabled:opacity-50 transition-all flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Wipe Access Logs</span>
+            </button>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-widest text-gray-400 border-b border-white/5">
-                <th className="pb-4 pl-4">Timestamp</th>
-                <th className="pb-4">Endpoint (IP / Location)</th>
-                <th className="pb-4">Platform</th>
-                <th className="pb-4">Network (ISP)</th>
-                <th className="pb-4">Referrer</th>
-                <th className="pb-4">Path</th>
-                <th className="pb-4">Duration</th>
-                <th className="pb-4 text-right pr-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {items.map(visit => {
-                const cleanVal = (val?: string, fallback = '—') => {
-                  if (!val) return fallback;
-                  const v = val.toLowerCase().trim();
-                  if (v === 'unknown' || v === '(unknown)') return fallback;
-                  return val;
-                };
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search signals by IP, path, city, country, browser, OS, ISP, or session ID..."
+            className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-white/10 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-blue-500 transition-colors"
+          />
+        </div>
+
+        {/* Cards List with Expanding Forensic Drawers */}
+        {(() => {
+          const cleanVal = (val?: string, fallback = '—') => {
+            if (!val) return fallback;
+            const v = val.toLowerCase().trim();
+            if (v === 'unknown' || v === '(unknown)') return fallback;
+            return val;
+          };
+
+          const getRelativeTime = (dateVal: any) => {
+            if (!dateVal) return '';
+            try {
+              let dateObj: Date;
+              if (typeof dateVal === 'object' && dateVal && 'seconds' in dateVal) {
+                dateObj = new Date(dateVal.seconds * 1000);
+              } else {
+                dateObj = new Date(dateVal);
+              }
+              if (isNaN(dateObj.getTime())) return '';
+              const now = Date.now();
+              const diff = Math.floor((now - dateObj.getTime()) / 1000);
+              if (diff < 30) return 'Just now';
+              if (diff < 60) return `${diff}s ago`;
+              if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+              if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+              return `${Math.floor(diff / 86400)}d ago`;
+            } catch {
+              return '';
+            }
+          };
+
+          const q = search.toLowerCase().trim();
+          const filteredVisits = items.filter(visit => {
+            if (!q) return true;
+            return (
+              visit.ip?.toLowerCase().includes(q) ||
+              visit.path?.toLowerCase().includes(q) ||
+              visit.city?.toLowerCase().includes(q) ||
+              visit.country?.toLowerCase().includes(q) ||
+              visit.countryCode?.toLowerCase().includes(q) ||
+              visit.region?.toLowerCase().includes(q) ||
+              visit.isp?.toLowerCase().includes(q) ||
+              visit.browser?.toLowerCase().includes(q) ||
+              visit.os?.toLowerCase().includes(q) ||
+              visit.deviceType?.toLowerCase().includes(q) ||
+              visit.referrer?.toLowerCase().includes(q) ||
+              visit.sessionId?.toLowerCase().includes(q)
+            );
+          });
+
+          if (filteredVisits.length === 0) {
+            return (
+              <div className="p-12 text-center text-gray-400 glass-md rounded-2xl border border-white/5 space-y-2">
+                <Activity className="w-8 h-8 text-gray-500 mx-auto" />
+                <div className="font-bold text-white text-sm">No Signal History Recorded</div>
+                <p className="text-xs text-gray-400">
+                  {search ? 'No visitor signals match your search filter.' : 'Live visitor session signals will appear here.'}
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-3">
+              {filteredVisits.map(visit => {
+                const isExpanded = expandedVisitId === visit.id;
+                const relTime = getRelativeTime(visit.startTime);
 
                 return (
-                  <tr 
-                    key={visit.id} 
-                    onClick={() => setSelectedVisit(visit)}
-                    className="group hover:bg-white/5 transition-colors cursor-pointer"
-                    title="Click to view full security signal details"
+                  <div
+                    key={visit.id}
+                    className="p-4 rounded-2xl bg-black/40 border border-white/10 hover:border-white/20 transition-all duration-200 space-y-3"
                   >
-                    <td className="py-4 pl-4">
-                      <p className="text-xs font-bold text-gray-200">{formatDateSafe(visit.startTime)}</p>
-                      <p className="text-[10px] text-gray-500">{formatTimeSafe(visit.startTime)}</p>
-                    </td>
-                    <td className="py-4">
-                      {visit.ip ? (
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-mono font-bold text-blue-400">{cleanVal(visit.ip, 'Localhost / Unknown')}</p>
-                          <p className="text-[10px] text-gray-400">
-                            {cleanVal(visit.city, 'Unknown City')}{visit.region ? `, ${visit.region}` : ''} ({cleanVal(visit.countryCode || visit.country, 'Unknown Country')})
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-mono text-gray-500">Localhost / Unknown</p>
-                          <p className="text-[10px] text-gray-500">Language: {cleanVal(visit.language, 'Unknown')}</p>
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-4">
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-semibold text-gray-200">{cleanVal(visit.deviceType, 'Desktop')}</p>
-                        <p className="text-[10px] text-gray-500 font-mono">
-                          {cleanVal(visit.os, 'Unknown OS')} • {cleanVal(visit.browser, 'Unknown Browser')}
-                        </p>
+                    {/* Header Line */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                          <span>{visit.path || '/'}</span>
+                        </span>
+
+                        <span className="text-xs font-mono font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                          {visit.duration || 0}s session
+                        </span>
+
+                        <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-gray-500" />
+                          <span>{formatDateSafe(visit.startTime)} {formatTimeSafe(visit.startTime)}</span>
+                          {relTime && (
+                            <span className="text-blue-400 font-semibold">({relTime})</span>
+                          )}
+                        </span>
                       </div>
-                    </td>
-                    <td className="py-4">
-                      <p className="text-xs text-gray-300 max-w-[150px] truncate font-mono" title={visit.isp}>
-                        {cleanVal(visit.isp, 'Internal / Cloudflare')}
-                      </p>
-                    </td>
-                    <td className="py-4">
-                      <p className="text-xs text-gray-400 max-w-[120px] truncate font-mono" title={visit.referrer}>
-                        {cleanVal(visit.referrer, 'Direct')}
-                      </p>
-                    </td>
-                    <td className="py-4">
-                      <span className="text-[10px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">{visit.path}</span>
-                    </td>
-                    <td className="py-4 text-xs font-mono font-bold text-green-400">{visit.duration}s</td>
-                    <td className="py-4 text-right pr-4">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm('Delete this visit log?')) {
-                            deleteDoc(doc(db, 'visits', visit.id!));
-                          }
-                        }} 
-                        className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete log entry"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      {/* Visit Detail Modal Overlay */}
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {selectedVisit && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-            >
-              <div className="absolute inset-0" onClick={() => setSelectedVisit(null)} />
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-                animate={{ opacity: 1, scale: 1, y: 0 }} 
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ type: 'spring', duration: 0.4 }}
-                className="bg-white dark:bg-[#0c0c0e] border border-gray-200 dark:border-white/10 w-full max-w-2xl p-8 rounded-[2rem] relative z-10 max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col"
-              >
-                {/* Header */}
-                <div className="flex justify-between items-start mb-6 pb-4 border-b border-gray-100 dark:border-white/5">
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500">Security Telemetry Log</span>
-                    <h3 className="text-xl font-bold mt-1 text-gray-900 dark:text-white">Visit Session Signal</h3>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedVisit(null)} 
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-gray-500 dark:text-white"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Bento Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                  {/* Session Identity Card */}
-                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-white/5 space-y-2">
-                    <div className="flex items-center space-x-2 text-blue-500">
-                      <Activity className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase tracking-wider font-sans">Session Identity</span>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] text-gray-400 uppercase font-mono">Session ID</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-bold text-gray-900 dark:text-gray-200 break-all select-all">{selectedVisit.sessionId || 'N/A'}</span>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(selectedVisit.sessionId || '');
-                            alert('Session ID copied to clipboard');
-                          }}
-                          className="p-1 hover:bg-gray-200 dark:hover:bg-white/10 rounded text-gray-400 dark:text-gray-300 transition-all ml-2 flex-shrink-0"
-                          title="Copy Session ID"
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        <button
+                          onClick={() => setExpandedVisitId(isExpanded ? null : (visit.id || ''))}
+                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-mono flex items-center gap-1 transition-colors"
                         >
-                          <Copy className="w-3.5 h-3.5" />
+                          <span>{isExpanded ? 'Less' : 'Inspect'}</span>
+                          {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Delete this visit log?')) {
+                              deleteDoc(doc(db, 'visits', visit.id!));
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                          title="Delete log entry"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200/50 dark:border-white/5 mt-2">
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">Duration</p>
-                          <p className="text-xs font-bold text-green-500 font-mono">{selectedVisit.duration || 0} seconds</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">Active Path</p>
-                          <p className="text-xs font-bold text-blue-500 font-mono truncate" title={selectedVisit.path}>{selectedVisit.path || '/'}</p>
-                        </div>
-                      </div>
                     </div>
-                  </div>
 
-                  {/* Timing Logs */}
-                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-white/5 space-y-2">
-                    <div className="flex items-center space-x-2 text-blue-500">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase tracking-wider font-sans">Timing telemetry</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-mono">Start Time</p>
-                        <p className="text-xs font-bold text-gray-900 dark:text-gray-200 font-mono">
-                          {selectedVisit.startTime ? `${formatDateSafe(selectedVisit.startTime)} ${formatTimeSafe(selectedVisit.startTime)}` : 'N/A'}
-                        </p>
+                    {/* 4-Box Telemetry Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-xs">
+                      {/* IP Address */}
+                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 flex items-center justify-between gap-2">
+                        <div className="truncate">
+                          <div className="text-[10px] text-gray-500 uppercase">IP ADDRESS</div>
+                          <div className="text-blue-400 font-bold truncate mt-0.5">{cleanVal(visit.ip, 'Localhost / Unknown')}</div>
+                        </div>
+                        {visit.ip && (
+                          <button
+                            onClick={() => copyVal(`ip_${visit.id}`, visit.ip || '')}
+                            className="text-gray-400 hover:text-white transition-colors shrink-0 p-1"
+                            title="Copy IP"
+                          >
+                            {copiedKey === `ip_${visit.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-mono">Last Active (Heartbeat)</p>
-                        <p className="text-xs font-bold text-gray-900 dark:text-gray-200 font-mono">
-                          {selectedVisit.endTime ? `${formatDateSafe(selectedVisit.endTime)} ${formatTimeSafe(selectedVisit.endTime)}` : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Geo Location Map / Details */}
-                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-white/5 space-y-2">
-                    <div className="flex items-center space-x-2 text-blue-500">
-                      <Globe className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase tracking-wider font-sans">Geolocation Insights</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-mono">IP Address</p>
-                        <p className="text-xs font-mono font-bold text-blue-500">{selectedVisit.ip || 'Localhost / Intranet'}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 border-t border-gray-200/50 dark:border-white/5 pt-2">
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">City / Region</p>
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-200">
-                            {selectedVisit.city || 'N/A'}{selectedVisit.region ? `, ${selectedVisit.region}` : ''}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">Country</p>
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-200">
-                            {selectedVisit.country || 'N/A'} {selectedVisit.countryCode ? `(${selectedVisit.countryCode})` : ''}
-                          </p>
+                      {/* Location */}
+                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                        <div className="text-[10px] text-gray-500 uppercase">LOCATION</div>
+                        <div className="text-white font-semibold truncate mt-0.5 flex items-center gap-1">
+                          <Globe className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span className="truncate">
+                            {[cleanVal(visit.city, ''), cleanVal(visit.countryCode || visit.country, '')].filter(Boolean).join(', ') || 'Localhost / Unknown'}
+                          </span>
                         </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-mono">Network Provider (ISP)</p>
-                        <p className="text-xs font-bold text-gray-900 dark:text-gray-200 truncate" title={selectedVisit.isp}>{selectedVisit.isp || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Device & Client Platform */}
-                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-white/5 space-y-2">
-                    <div className="flex items-center space-x-2 text-blue-500">
-                      <Cpu className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase tracking-wider font-sans">Client Platform</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">Device Type</p>
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-200">{selectedVisit.deviceType || 'Desktop'}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">OS</p>
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-200">{selectedVisit.os || 'N/A'}</p>
+                      {/* OS & Device */}
+                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                        <div className="text-[10px] text-gray-500 uppercase">DEVICE & OS</div>
+                        <div className="text-purple-300 font-semibold truncate mt-0.5 flex items-center gap-1">
+                          {visit.deviceType === 'Mobile' ? <Smartphone className="w-3 h-3 shrink-0" /> : <Laptop className="w-3 h-3 shrink-0" />}
+                          <span className="truncate">{cleanVal(visit.os, 'Unknown OS')} ({cleanVal(visit.deviceType, 'Desktop')})</span>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 border-t border-gray-200/50 dark:border-white/5 pt-2">
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">Browser</p>
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-200">{selectedVisit.browser || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">Screen Frame</p>
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-200 font-mono">{selectedVisit.screenResolution || 'N/A'}</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 border-t border-gray-200/50 dark:border-white/5 pt-2">
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">Language</p>
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-200 font-mono">{selectedVisit.language || 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-gray-400 uppercase font-mono">Referrer Source</p>
-                          <p className="text-xs font-bold text-gray-900 dark:text-gray-200 truncate" title={selectedVisit.referrer}>{selectedVisit.referrer || 'Direct'}</p>
+
+                      {/* Browser & ISP */}
+                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                        <div className="text-[10px] text-gray-500 uppercase">BROWSER & ISP</div>
+                        <div className="text-gray-200 font-semibold truncate mt-0.5">
+                          {cleanVal(visit.browser, 'Browser')} • <span className="text-gray-400">{cleanVal(visit.isp, 'Internal')}</span>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* User Agent Frame */}
-                  <div className="md:col-span-2 p-4 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-white/5 space-y-1">
-                    <p className="text-[10px] text-gray-400 uppercase font-mono">Raw User Agent Header</p>
-                    <p className="text-[11px] font-mono font-bold text-gray-600 dark:text-gray-400 break-all leading-relaxed bg-gray-100 dark:bg-black/50 p-3 rounded-lg border border-gray-200/50 dark:border-white/5 select-all">
-                      {selectedVisit.userAgent || 'N/A'}
-                    </p>
-                  </div>
-                </div>
+                    {/* Expanding Forensic Drawer */}
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-3 p-4 bg-black/80 rounded-xl border border-white/10 font-mono text-xs space-y-4 text-gray-300 overflow-x-auto"
+                      >
+                        <div className="text-xs font-bold text-blue-400 flex items-center justify-between pb-1 border-b border-white/10">
+                          <div className="flex items-center gap-1.5">
+                            <Terminal className="w-3.5 h-3.5" />
+                            <span>Security Telemetry Log — Visit Session Signal</span>
+                          </div>
+                          <span className="text-[10px] text-gray-500 font-normal">ID: {visit.id}</span>
+                        </div>
 
-                {/* Actions Footer */}
-                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 flex justify-end">
-                  <button 
-                    onClick={() => setSelectedVisit(null)}
-                    className="btn-secondary py-2 px-6 text-xs"
-                  >
-                    Dismiss Telemetry
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+                        {/* Bento Grid keeping every single piece of information */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                          {/* Session Identity Card */}
+                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
+                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                              <Activity className="w-3.5 h-3.5" />
+                              <span>Session Identity</span>
+                            </div>
+                            <div className="space-y-1.5 text-[11px]">
+                              <div>
+                                <div className="text-gray-500 text-[10px] uppercase">Session ID</div>
+                                <div className="flex items-center justify-between gap-2 mt-0.5">
+                                  <span className="font-mono text-white break-all select-all">{visit.sessionId || 'N/A'}</span>
+                                  {visit.sessionId && (
+                                    <button
+                                      onClick={() => copyVal(`sess_${visit.id}`, visit.sessionId || '')}
+                                      className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-all shrink-0"
+                                      title="Copy Session ID"
+                                    >
+                                      {copiedKey === `sess_${visit.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                                <div>
+                                  <div className="text-gray-500 text-[10px] uppercase">Total Duration</div>
+                                  <div className="font-bold text-emerald-400">{visit.duration || 0} seconds</div>
+                                </div>
+                                <div>
+                                  <div className="text-gray-500 text-[10px] uppercase">Active Path</div>
+                                  <div className="font-bold text-blue-400 truncate" title={visit.path}>{visit.path || '/'}</div>
+                                </div>
+                              </div>
+                              <div className="pt-1">
+                                <div className="text-gray-500 text-[10px] uppercase">Referrer Source</div>
+                                <div className="text-gray-300 truncate font-mono" title={visit.referrer}>{cleanVal(visit.referrer, 'Direct / Internal')}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Timing Telemetry Card */}
+                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
+                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>Timing Telemetry</span>
+                            </div>
+                            <div className="space-y-2 text-[11px]">
+                              <div>
+                                <div className="text-gray-500 text-[10px] uppercase">Start Time</div>
+                                <div className="text-white font-mono">
+                                  {visit.startTime ? `${formatDateSafe(visit.startTime)} at ${formatTimeSafe(visit.startTime)}` : 'N/A'}
+                                </div>
+                              </div>
+                              <div className="pt-1.5 border-t border-white/5">
+                                <div className="text-gray-500 text-[10px] uppercase">Last Active (Heartbeat)</div>
+                                <div className="text-white font-mono">
+                                  {visit.endTime ? `${formatDateSafe(visit.endTime)} at ${formatTimeSafe(visit.endTime)}` : 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Geolocation & Network Card */}
+                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
+                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                              <Globe className="w-3.5 h-3.5" />
+                              <span>Geolocation & Network</span>
+                            </div>
+                            <div className="space-y-1.5 text-[11px]">
+                              <div>
+                                <div className="text-gray-500 text-[10px] uppercase">IP Address</div>
+                                <div className="text-blue-400 font-bold">{cleanVal(visit.ip, 'Localhost / Intranet')}</div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
+                                <div>
+                                  <div className="text-gray-500 text-[10px] uppercase">City / Region</div>
+                                  <div className="text-white">
+                                    {cleanVal(visit.city, 'N/A')}{visit.region ? `, ${visit.region}` : ''}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-gray-500 text-[10px] uppercase">Country</div>
+                                  <div className="text-white">
+                                    {cleanVal(visit.country, 'N/A')} {visit.countryCode ? `(${visit.countryCode})` : ''}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="pt-1 border-t border-white/5">
+                                <div className="text-gray-500 text-[10px] uppercase">Network Provider (ISP)</div>
+                                <div className="text-gray-300 truncate" title={visit.isp}>{cleanVal(visit.isp, 'Internal / Cloudflare')}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Client Platform Card */}
+                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
+                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                              <Cpu className="w-3.5 h-3.5" />
+                              <span>Client Platform</span>
+                            </div>
+                            <div className="space-y-1.5 text-[11px]">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <div className="text-gray-500 text-[10px] uppercase">Device Type</div>
+                                  <div className="text-white">{cleanVal(visit.deviceType, 'Desktop')}</div>
+                                </div>
+                                <div>
+                                  <div className="text-gray-500 text-[10px] uppercase">Operating System</div>
+                                  <div className="text-white">{cleanVal(visit.os, 'N/A')}</div>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
+                                <div>
+                                  <div className="text-gray-500 text-[10px] uppercase">Browser</div>
+                                  <div className="text-white">{cleanVal(visit.browser, 'N/A')}</div>
+                                </div>
+                                <div>
+                                  <div className="text-gray-500 text-[10px] uppercase">Screen Frame</div>
+                                  <div className="text-white font-mono">{cleanVal(visit.screenResolution, 'N/A')}</div>
+                                </div>
+                              </div>
+                              <div className="pt-1 border-t border-white/5">
+                                <div className="text-gray-500 text-[10px] uppercase">Language</div>
+                                <div className="text-white font-mono">{cleanVal(visit.language, 'N/A')}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Raw User Agent Header */}
+                          <div className="md:col-span-2 p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-1">
+                            <div className="text-gray-500 text-[10px] uppercase">Raw User Agent Header</div>
+                            <div className="text-[11px] font-mono text-gray-400 break-all leading-relaxed bg-black/90 p-2.5 rounded-lg border border-white/5 select-all">
+                              {visit.userAgent || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 }
