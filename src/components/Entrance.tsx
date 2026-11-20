@@ -1,192 +1,205 @@
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useEffect } from 'react';
-import { Shield, Lock, Terminal, Activity, Cpu, Bot, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { auth } from '../lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { Terminal } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
-interface EntranceProps {
-  onComplete: () => void;
+interface TerminalLine {
+  prompt?: string;
+  text: string;
+  tone?: 'command' | 'info' | 'success';
+  delay: number;
 }
 
-const TERMINAL_LOGS = [
-  { text: "> Connecting to web servers...", type: "info" },
-  { text: "> Loading portfolio assets [OK]", type: "success" },
-  { text: "> Retrieving database documents...", type: "info" },
-  { text: "> Fetching latest projects...", type: "info" },
-  { text: "> Organizing portfolio sections...", type: "success" },
-  { text: "> Loading custom preferences...", type: "info" },
-  { text: "> Welcome to Abdulrahman's portfolio.", type: "success" },
-  { text: "> PORTFOLIO READY.", type: "success" }
-];
+function shouldSkipInitially(): boolean {
+  if (typeof window === 'undefined') return true;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return true;
+  // Keep /login portal discreet as requested
+  if (window.location.pathname.startsWith('/login')) return true;
+  return false;
+}
 
-export default function Entrance({ onComplete }: EntranceProps) {
-  const [logs, setLogs] = useState<string[]>([]);
-  const [currentLogIndex, setCurrentLogIndex] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const navigate = useNavigate();
+export default function Entrance() {
+  const [visible, setVisible] = useState<boolean>(() => !shouldSkipInitially());
+  const [visibleLines, setVisibleLines] = useState<number>(1);
+  const [typedChars, setTypedChars] = useState<number>(0);
+  const { language } = useLanguage();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && (user.email === '000means000@gmail.com' || user.email === 'abdulrahmankamal609@gmail.com')) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
-    });
-    return () => unsubscribe();
+  const isAdminRoute =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+
+  const lines: TerminalLine[] = isAdminRoute
+    ? [
+        { prompt: 'ak@sec:~$', text: ' ./console --attach admin', tone: 'command', delay: 0 },
+        { text: 'Mounting workspace configuration...', tone: 'info', delay: 240 },
+        { text: 'Verifying session & vault modules... OK', tone: 'success', delay: 500 },
+        { text: 'Admin console ready.', tone: 'success', delay: 780 },
+      ]
+    : [
+        { prompt: 'visitor@ak-sec:~$', text: ' ./launch --portfolio', tone: 'command', delay: 0 },
+        { text: 'Loading profile [Abdulrahman Kamal]...', tone: 'info', delay: 240 },
+        { text: 'Syncing projects, writeups & credentials... OK', tone: 'success', delay: 500 },
+        { text: 'Interface ready. Welcome.', tone: 'success', delay: 780 },
+      ];
+
+  const firstCmd = lines[0].text;
+
+  const dismiss = useCallback(() => {
+    setVisible(false);
   }, []);
 
   useEffect(() => {
-    if (currentLogIndex < TERMINAL_LOGS.length) {
-      const timer = setTimeout(() => {
-        setLogs(prev => [...prev, TERMINAL_LOGS[currentLogIndex].text]);
-        setCurrentLogIndex(prev => prev + 1);
-      }, currentLogIndex === 0 ? 500 : 300);
-      return () => clearTimeout(timer);
-    } else {
-      setTimeout(() => setIsFinished(true), 1000);
-    }
-  }, [currentLogIndex]);
+    if (!visible) return;
+
+    // Type out the first command briskly over ~220ms
+    const typeInterval = window.setInterval(() => {
+      setTypedChars((prev) => {
+        if (prev >= firstCmd.length) {
+          window.clearInterval(typeInterval);
+          return prev;
+        }
+        return prev + 2;
+      });
+    }, 16);
+
+    const lineTimers = lines.slice(1).map((line, idx) =>
+      window.setTimeout(() => {
+        setVisibleLines(idx + 2);
+      }, line.delay)
+    );
+
+    const finishTimer = window.setTimeout(() => {
+      dismiss();
+    }, 1350);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+        dismiss();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearInterval(typeInterval);
+      lineTimers.forEach((id) => window.clearTimeout(id));
+      window.clearTimeout(finishTimer);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [visible, dismiss, firstCmd.length]);
 
   return (
-    <motion.div 
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 overflow-hidden"
-    >
-      {/* Background Matrix-like grid */}
-      <div 
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`,
-          backgroundSize: '40px 40px'
-        }}
-      />
-      
-      {/* Scanline Effect */}
-      <div className="absolute inset-0 pointer-events-none z-10 scanline overflow-hidden">
-        <div className="w-full h-[100vh] bg-gradient-to-b from-transparent via-blue-500/10 to-transparent animate-scan" />
-      </div>
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          key="terminal-entrance"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 1.015 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          onClick={dismiss}
+          className="fixed inset-0 z-[120] bg-[#050608]/98 backdrop-blur-xl text-white flex items-center justify-center p-4 sm:p-6 select-none cursor-pointer overflow-hidden"
+          role="dialog"
+          aria-label="Terminal entrance sequence"
+        >
+          {/* Subtle grid backdrop */}
+          <div
+            className="absolute inset-0 opacity-[0.06] pointer-events-none"
+            style={{
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)',
+              backgroundSize: '36px 36px',
+            }}
+          />
 
-      <div className={`w-full max-w-2xl bg-[#0a0a0a] border ${isAdmin ? 'border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)]' : 'border-gray-800/50'} rounded-2xl p-8 shadow-2xl relative overflow-hidden transition-colors duration-1000`}>
-        <div className="flex items-center space-x-2 mb-8 border-b border-gray-800 pb-4">
-          <Terminal className={`w-4 h-4 ${isAdmin ? 'text-blue-500' : 'text-gray-500'}`} />
-          <span className="text-xs font-mono text-gray-500 uppercase tracking-widest">
-            {isAdmin ? 'Admin Portal v3.0.1' : 'Abdulrahman Kamal Portfolio v2.0.4'}
-          </span>
-          <div className="flex-1" />
-          <div className="flex space-x-1.5 leading-none">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500/20" />
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20" />
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500/20" />
-          </div>
-        </div>
+          {/* Radial glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.16)_0%,transparent_62%)] pointer-events-none" />
 
-        <div className="space-y-2 font-mono text-sm sm:text-base mb-12 h-48 overflow-y-auto custom-scrollbar">
-          {logs.map((log, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`flex items-start space-x-3 ${
-                log.includes('Welcome') || log.includes('OK') || log.includes('READY') ? 'text-green-500' :
-                log.includes('Organizing') ? 'text-yellow-500' :
-                isAdmin ? 'text-blue-400' : 'text-gray-400'
-              }`}
-            >
-              <span className="opacity-50">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
-              <span>{isAdmin && log.includes('A. Kamal') ? log.replace('User', 'ADMIN') : log}</span>
-            </motion.div>
-          ))}
-          {!isFinished && (
-            <motion.div
-              animate={{ opacity: [1, 0] }}
-              transition={{ repeat: Infinity, duration: 0.8 }}
-              className={`w-2 h-4 ${isAdmin ? 'bg-blue-500' : 'bg-gray-500'} inline-block align-middle ml-1`}
-            />
-          )}
-        </div>
-
-        <AnimatePresence>
-          {isFinished && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center space-y-8"
-            >
-              <div className="flex justify-center items-center space-x-12 py-4">
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}>
-                  <Shield className="w-10 h-10 text-white/20" />
-                </motion.div>
-                <motion.div 
-                   animate={isAdmin ? { scale: [1, 1.05, 1], rotate: [0, 90, 180, 270, 360] } : { scale: [1, 1.1, 1] }} 
-                  transition={{ duration: isAdmin ? 10 : 4, repeat: Infinity }}
-                  className={`${isAdmin ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/10'} p-6 rounded-full border shadow-2xl`}
-                >
-                  {isAdmin ? <Cpu className="w-12 h-12 text-blue-400" /> : <Bot className="w-12 h-12 text-white" />}
-                </motion.div>
-                <motion.div animate={{ rotate: -360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }}>
-                  <Lock className="w-10 h-10 text-white/20" />
-                </motion.div>
+          {/* Terminal Window */}
+          <motion.div
+            dir="ltr"
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.98 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 w-full max-w-xl rounded-2xl bg-[#0b0d12] border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.75)] overflow-hidden"
+          >
+            {/* Window Top Bar */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[#12161f] border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
               </div>
+              <div className="flex items-center gap-2 font-mono text-[11px] font-semibold text-gray-400">
+                <Terminal className="w-3.5 h-3.5 text-blue-400" />
+                <span>{isAdminRoute ? 'ak@sec: ~/admin' : 'ak@sec: ~/portfolio'}</span>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dismiss();
+                }}
+                className="font-mono text-[10px] uppercase tracking-wider text-gray-400 hover:text-white transition-colors px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 cursor-pointer"
+              >
+                {language === 'ar' ? 'تخطي' : 'Skip'}
+              </button>
+            </div>
 
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <motion.button
-                    onClick={onComplete}
-                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.9)' }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex-1 py-5 bg-white text-black font-bold text-lg rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-all flex items-center justify-center space-x-3 group"
+            {/* Terminal Body */}
+            <div className="p-5 sm:p-6 font-mono text-xs sm:text-sm space-y-2.5 min-h-[168px] text-left">
+              {lines.slice(0, visibleLines).map((line, idx) => {
+                const isFirst = idx === 0;
+                const content = isFirst ? line.text.slice(0, typedChars) : line.text;
+                const isLastVisible = idx === visibleLines - 1;
+
+                return (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -4 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.16 }}
+                    className="leading-relaxed break-words"
                   >
-                    <span>Explore Portfolio</span>
-                    <Activity className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </motion.button>
-
-                  {isAdmin && (
-                    <motion.button
-                      onClick={() => {
-                        onComplete();
-                        setTimeout(() => navigate('/admin'), 100);
-                      }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex-1 py-5 bg-blue-600 text-white font-bold text-lg rounded-2xl shadow-[0_0_40px_rgba(37,99,235,0.2)] transition-all flex items-center justify-center space-x-3 group border border-blue-400/30"
+                    {line.prompt && (
+                      <span className="text-blue-400 font-semibold">{line.prompt}</span>
+                    )}
+                    <span
+                      className={
+                        line.tone === 'success'
+                          ? 'text-emerald-400'
+                          : line.tone === 'info'
+                            ? 'text-gray-300'
+                            : 'text-white font-medium'
+                      }
                     >
-                      <span>Enter Admin Portal</span>
-                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </motion.button>
-                  )}
-                </div>
-                <p className="text-gray-500 font-mono text-[10px] uppercase tracking-[0.3em] font-medium">
-                  Identity: Abdulrahman Kamal
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                      {!line.prompt && <span className="text-gray-500 mr-2">&gt;</span>}
+                      {content}
+                    </span>
+                    {isLastVisible && (
+                      <span className="inline-block w-2 h-4 ml-1 align-middle bg-blue-400 animate-pulse" />
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
 
-      <style>{`
-        @keyframes scan {
-          from { transform: translateY(-100%); }
-          to { transform: translateY(100%); }
-        }
-        .animate-scan {
-          animation: scan 3s linear infinite;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-        }
-      `}</style>
-    </motion.div>
+            {/* Bottom Progress Footer */}
+            <div className="px-5 pb-4 pt-1 space-y-2">
+              <div className="h-[2px] w-full bg-white/10 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full w-full origin-left bg-gradient-to-r from-blue-500 via-indigo-400 to-emerald-400"
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 uppercase tracking-wider">
+                <span>AK.SEC Shell</span>
+                <span>{language === 'ar' ? 'انقر في أي مكان للمتابعة' : 'Click or press Enter to skip'}</span>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

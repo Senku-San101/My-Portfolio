@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Terminal, Plus, Trash2, Edit3, Save, X, Check, Copy, AlertTriangle, 
-  Database, RefreshCw, ExternalLink, ShieldAlert, Sparkles, Filter, Eye, EyeOff,
+  Database, RefreshCw, ExternalLink, ShieldAlert, Filter, Eye, EyeOff,
   Globe, Network, Key, Hash, ShieldCheck
 } from 'lucide-react';
 import { 
@@ -38,6 +38,12 @@ export default function OpsVaultEditor() {
   const [editingItem, setEditingItem] = useState<VaultItem | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [statusBanner, setStatusBanner] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const showBanner = (type: 'success' | 'error', text: string) => {
+    setStatusBanner({ type, text });
+    setTimeout(() => setStatusBanner(null), 4000);
+  };
 
   // Form states
   const [formData, setFormData] = useState({
@@ -123,9 +129,10 @@ export default function OpsVaultEditor() {
         });
       }
       setIsModalOpen(false);
+      showBanner('success', editingItem ? 'Payload updated.' : 'Payload added to Ops Vault.');
     } catch (err) {
       console.error('Error saving vault item:', err);
-      alert('Failed to save payload to Ops Vault.');
+      showBanner('error', 'Failed to save payload to Ops Vault.');
     }
   };
 
@@ -133,9 +140,10 @@ export default function OpsVaultEditor() {
     if (!confirm(`Are you sure you want to delete payload "${title}"?`)) return;
     try {
       await deleteDoc(doc(db, 'ops_vault', id));
+      showBanner('success', `Deleted payload "${title}".`);
     } catch (err) {
       console.error('Error deleting vault item:', err);
-      alert('Failed to delete payload.');
+      showBanner('error', 'Failed to delete payload.');
     }
   };
 
@@ -151,10 +159,10 @@ export default function OpsVaultEditor() {
           updatedAt: serverTimestamp(),
         });
       }
-      alert('10 security operations payloads successfully seeded!');
+      showBanner('success', '10 security operations payloads successfully seeded!');
     } catch (err) {
       console.error('Failed to seed default vault items:', err);
-      alert('Error seeding default payloads.');
+      showBanner('error', 'Error seeding default payloads.');
     } finally {
       setSeeding(false);
     }
@@ -180,22 +188,22 @@ export default function OpsVaultEditor() {
   return (
     <div className="space-y-6">
       {/* Top Title & Sub-tabs */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-white/10">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono font-medium text-blue-400 uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-xs font-mono font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
             <Terminal className="w-3.5 h-3.5" />
             <span>Cyber Operations & Tactical Arsenal</span>
           </div>
-          <h2 className="text-2xl font-black text-white mt-1">
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white mt-1">
             Admin Security Deck & Tools
           </h2>
-          <p className="text-gray-400 text-sm mt-0.5">
+          <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
             Personal workstation for real-time header audits, CIDR math, cryptographic tools, and your curated command vault.
           </p>
         </div>
 
         {/* Sub-tab Switcher */}
-        <div className="flex items-center gap-2 p-1 bg-black/40 border border-white/10 rounded-2xl shrink-0 overflow-x-auto">
+        <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl shrink-0 overflow-x-auto no-scrollbar">
           {[
             { id: 'vault', label: 'Command Vault', icon: Terminal, count: items.length },
             { id: 'headers', label: 'Header Auditor', icon: Globe },
@@ -208,17 +216,17 @@ export default function OpsVaultEditor() {
               <button
                 key={tab.id}
                 onClick={() => setSubTab(tab.id as any)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                   active
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-white/5'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
                 {typeof tab.count === 'number' && (
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                    active ? 'bg-black/30 text-white' : 'bg-white/10 text-gray-400'
+                    active ? 'bg-black/25 text-white' : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400'
                   }`}>
                     {tab.count}
                   </span>
@@ -228,6 +236,17 @@ export default function OpsVaultEditor() {
           })}
         </div>
       </div>
+
+      {statusBanner && (
+        <div className={`p-3.5 rounded-xl border text-xs font-medium flex items-center gap-2 ${
+          statusBanner.type === 'success'
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+            : 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'
+        }`}>
+          {statusBanner.type === 'success' ? <Check className="w-4 h-4 shrink-0" /> : <ShieldAlert className="w-4 h-4 shrink-0" />}
+          <span>{statusBanner.text}</span>
+        </div>
+      )}
 
       {/* Sub-tab 1: Command Vault Manager */}
       {subTab === 'vault' && (
@@ -241,25 +260,25 @@ export default function OpsVaultEditor() {
           {/* Quick Stats & Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/5">
+              <div className="p-3.5 rounded-xl bg-gray-50/90 dark:bg-black/40 border border-gray-200 dark:border-white/5">
                 <div className="text-[11px] font-mono text-gray-500">STORED PAYLOADS</div>
-                <div className="text-xl font-bold font-mono text-white mt-0.5">{items.length}</div>
+                <div className="text-xl font-bold font-mono text-gray-900 dark:text-white mt-0.5">{items.length}</div>
               </div>
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/5">
+              <div className="p-3.5 rounded-xl bg-gray-50/90 dark:bg-black/40 border border-gray-200 dark:border-white/5">
                 <div className="text-[11px] font-mono text-gray-500">PUBLIC TO VISITORS</div>
-                <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
+                <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {items.filter((i) => i.isPublic !== false).length}
                 </div>
               </div>
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/5">
+              <div className="p-3.5 rounded-xl bg-gray-50/90 dark:bg-black/40 border border-gray-200 dark:border-white/5">
                 <div className="text-[11px] font-mono text-gray-500">PRIVATE (ADMIN)</div>
-                <div className="text-xl font-bold font-mono text-amber-400 mt-0.5">
+                <div className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-0.5">
                   {items.filter((i) => i.isPublic === false).length}
                 </div>
               </div>
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/5">
+              <div className="p-3.5 rounded-xl bg-gray-50/90 dark:bg-black/40 border border-gray-200 dark:border-white/5">
                 <div className="text-[11px] font-mono text-gray-500">CATEGORIES</div>
-                <div className="text-xl font-bold font-mono text-blue-400 mt-0.5">{CATEGORIES.length}</div>
+                <div className="text-xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-0.5">{CATEGORIES.length}</div>
               </div>
             </div>
 
@@ -267,16 +286,16 @@ export default function OpsVaultEditor() {
               <button
                 onClick={handleSeedDefaults}
                 disabled={seeding}
-                className="px-3.5 py-2.5 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 font-medium text-xs flex items-center gap-1.5 transition-colors"
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Seed standard 10 tactical commands into Firestore"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Database className="w-3.5 h-3.5" />
                 <span>{seeding ? 'Seeding...' : 'Seed Defaults'}</span>
               </button>
 
               <button
                 onClick={openCreateModal}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>New Payload</span>
@@ -292,13 +311,13 @@ export default function OpsVaultEditor() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search commands, flags, tools, CVEs or tags..."
-                className="w-full px-4 py-2.5 bg-black/50 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-mono"
+                className="w-full px-4 py-2.5 bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 font-mono"
               />
             </div>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2.5 bg-black/50 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-sans"
+              className="px-3 py-2.5 bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 font-sans"
             >
               <option value="all">All Categories</option>
               {CATEGORIES.map((c) => (
@@ -314,12 +333,12 @@ export default function OpsVaultEditor() {
               <span>Loading Command Vault...</span>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 glass-md rounded-2xl border border-white/5 space-y-3">
-              <Terminal className="w-8 h-8 text-gray-500 mx-auto" />
+            <div className="p-8 text-center text-gray-500 dark:text-gray-400 glass-md rounded-2xl border border-gray-200 dark:border-white/5 space-y-3">
+              <Terminal className="w-8 h-8 text-gray-400 mx-auto" />
               <p className="text-sm">No commands matched your filter.</p>
               <button
                 onClick={handleSeedDefaults}
-                className="px-4 py-2 rounded-xl bg-blue-600/20 text-blue-300 border border-blue-500/30 text-xs font-semibold hover:bg-blue-600/30 transition-colors"
+                className="px-4 py-2 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30 text-xs font-semibold hover:bg-blue-500/25 transition-colors cursor-pointer"
               >
                 Seed 10 Verified Security Payloads
               </button>
@@ -329,27 +348,27 @@ export default function OpsVaultEditor() {
               {filteredItems.map((item) => (
                 <div
                   key={item.id}
-                  className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-white/20 transition-all duration-200 space-y-2.5"
+                  className="p-4 rounded-xl bg-gray-50/90 dark:bg-black/40 border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 transition-all duration-200 space-y-2.5"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-white text-sm">{item.title}</span>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-white/5 text-blue-400 border border-white/5">
+                      <span className="font-bold text-gray-900 dark:text-white text-sm">{item.title}</span>
+                      <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/15">
                         {CATEGORIES.find((c) => c.id === item.category)?.label || item.category}
                       </span>
                       <span className={`px-2 py-0.5 rounded text-[11px] font-mono uppercase font-semibold ${
-                        item.dangerLevel === 'critical' ? 'bg-red-500/20 text-red-400' :
-                        item.dangerLevel === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-                        'bg-emerald-500/20 text-emerald-400'
+                        item.dangerLevel === 'critical' ? 'bg-red-500/15 text-red-600 dark:text-red-400' :
+                        item.dangerLevel === 'medium' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' :
+                        'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                       }`}>
                         {item.dangerLevel || 'low'}
                       </span>
                       {item.isPublic === false ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/25 flex items-center gap-1">
                           <EyeOff className="w-3 h-3" /> Private
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-300 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
                           <Eye className="w-3 h-3" /> Public
                         </span>
                       )}
@@ -358,21 +377,21 @@ export default function OpsVaultEditor() {
                     <div className="flex items-center gap-1.5 self-end sm:self-auto">
                       <button
                         onClick={() => copyCmd(item.id, item.command)}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+                        className="p-1.5 rounded-lg bg-gray-200/70 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
                         title="Copy command"
                       >
-                        {copiedId === item.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        {copiedId === item.id ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                       </button>
                       <button
                         onClick={() => openEditModal(item)}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-blue-400 transition-colors"
+                        className="p-1.5 rounded-lg bg-gray-200/70 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
                         title="Edit payload"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(item.id, item.title)}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-colors"
+                        className="p-1.5 rounded-lg bg-gray-200/70 dark:bg-white/5 hover:bg-red-500/15 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
                         title="Delete payload"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -380,13 +399,13 @@ export default function OpsVaultEditor() {
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-400 leading-relaxed">{item.description}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{item.description}</p>
 
-                  <div className="p-3 bg-black/80 rounded-lg font-mono text-xs text-emerald-400 border border-white/5 overflow-x-auto flex items-center justify-between gap-3 select-all">
+                  <div className="p-3 bg-zinc-900 dark:bg-black/80 rounded-lg font-mono text-xs text-emerald-400 border border-gray-800 dark:border-white/5 overflow-x-auto flex items-center justify-between gap-3 select-all">
                     <span>{item.command}</span>
                     <button
                       onClick={() => copyCmd(item.id, item.command)}
-                      className="text-gray-500 hover:text-white transition-colors shrink-0"
+                      className="text-gray-400 hover:text-white transition-colors shrink-0 cursor-pointer"
                     >
                       {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
@@ -395,7 +414,7 @@ export default function OpsVaultEditor() {
                   {item.tags && item.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {item.tags.map((tag, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded bg-white/5 text-gray-400 text-[10px] font-mono">
+                        <span key={idx} className="px-2 py-0.5 rounded bg-gray-200/70 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-[10px] font-mono">
                           #{tag}
                         </span>
                       ))}
@@ -429,16 +448,16 @@ export default function OpsVaultEditor() {
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-full max-w-xl glass-md p-6 rounded-3xl border border-white/20 bg-gray-900 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-xl glass-md p-6 rounded-3xl border border-gray-200 dark:border-white/20 bg-white dark:bg-gray-900 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar"
           >
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Terminal className="w-5 h-5 text-blue-400" />
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-3">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                 <span>{editingItem ? 'Edit Security Payload' : 'New Security Payload'}</span>
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
+                className="p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -446,24 +465,24 @@ export default function OpsVaultEditor() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-mono text-gray-400 mb-1">Title</label>
+                <label className="block text-xs font-mono text-gray-600 dark:text-gray-400 mb-1">Title</label>
                 <input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="e.g. Audit SSH Authorized Keys"
-                  className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-sans"
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 font-sans"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-mono text-gray-400 mb-1">Category</label>
+                  <label className="block text-xs font-mono text-gray-600 dark:text-gray-400 mb-1">Category</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as VaultCategory })}
-                    className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c.id} value={c.id}>{c.label}</option>
@@ -472,11 +491,11 @@ export default function OpsVaultEditor() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-gray-400 mb-1">Impact / Danger Level</label>
+                  <label className="block text-xs font-mono text-gray-600 dark:text-gray-400 mb-1">Impact / Danger Level</label>
                   <select
                     value={formData.dangerLevel}
                     onChange={(e) => setFormData({ ...formData, dangerLevel: e.target.value as any })}
-                    className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
                   >
                     <option value="low">Low (Safe read-only audit)</option>
                     <option value="medium">Medium (Modifies config / drops packets)</option>
@@ -486,36 +505,36 @@ export default function OpsVaultEditor() {
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-gray-400 mb-1">Bash / Tactical Command</label>
+                <label className="block text-xs font-mono text-gray-600 dark:text-gray-400 mb-1">Bash / Tactical Command</label>
                 <textarea
                   required
                   rows={3}
                   value={formData.command}
                   onChange={(e) => setFormData({ ...formData, command: e.target.value })}
                   placeholder="e.g. ss -tulpn | grep -v '127.0.0.1'"
-                  className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-xl text-emerald-400 text-sm focus:outline-none focus:border-blue-500 font-mono resize-none"
+                  className="w-full px-3 py-2 bg-zinc-900 dark:bg-black/50 border border-gray-700 dark:border-white/10 rounded-xl text-emerald-400 text-sm focus:outline-none focus:border-blue-500 font-mono resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-gray-400 mb-1">Description & Operational Notes</label>
+                <label className="block text-xs font-mono text-gray-600 dark:text-gray-400 mb-1">Description & Operational Notes</label>
                 <textarea
                   rows={2}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Describe when to use, prerequisite privileges, or expected outputs..."
-                  className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-sans resize-none"
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 font-sans resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-gray-400 mb-1">Tags (Comma-separated)</label>
+                <label className="block text-xs font-mono text-gray-600 dark:text-gray-400 mb-1">Tags (Comma-separated)</label>
                 <input
                   type="text"
                   value={formData.tags}
                   onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                   placeholder="e.g. soc, linux, audit, forensics"
-                  className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-mono"
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 font-mono"
                 />
               </div>
 
@@ -525,24 +544,24 @@ export default function OpsVaultEditor() {
                   id="isPublic"
                   checked={formData.isPublic}
                   onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-                  className="rounded border-white/20 bg-black/50 text-blue-600 focus:ring-0"
+                  className="rounded border-gray-300 dark:border-white/20 bg-white dark:bg-black/50 text-blue-600 focus:ring-0"
                 />
-                <label htmlFor="isPublic" className="text-xs text-gray-300 font-medium cursor-pointer">
-                  Visible to Arsenal visitors (uncheck to keep strictly Admin-only)
+                <label htmlFor="isPublic" className="text-xs text-gray-700 dark:text-gray-300 font-medium cursor-pointer">
+                  Visible in Arsenal catalog (uncheck to keep strictly Admin-only)
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-200 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium transition-colors"
+                  className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-medium transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-lg shadow-blue-500/20"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-lg shadow-blue-500/20 cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{editingItem ? 'Save Changes' : 'Create Payload'}</span>

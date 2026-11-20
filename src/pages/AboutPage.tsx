@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Mail, Linkedin, Github, MapPin, Globe, Briefcase, Award, FolderCode, Cog, BookOpen, ChevronRight } from 'lucide-react';
+import { Shield, Mail, Linkedin, Github, Briefcase, Award, FolderCode, Cog, BookOpen, ChevronRight, FileText, Eye, Download, X as XIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { doc, onSnapshot, collection, addDoc, query, orderBy } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError, openLink } from '../lib/firebase';
 import { Profile, AppSettings, Specialization } from '../types';
-import Typewriter from '../components/Typewriter';
 import PageWrapper from '../components/PageWrapper';
 import ImageViewer from '../components/ImageViewer';
+import ScrambleHeader from '../components/ScrambleHeader';
 import { useLanguage } from '../context/LanguageContext';
-import { FileText, Eye, Download, X as XIcon } from 'lucide-react';
 
 function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
   const [isMobile, setIsMobile] = useState(false);
@@ -25,29 +24,29 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
   }, []);
 
   const absoluteUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
-  const embedUrl = isMobile 
-    ? `https://docs.google.com/gview?url=${encodeURIComponent(absoluteUrl)}&embedded=true` 
+  const embedUrl = isMobile
+    ? `https://docs.google.com/gview?url=${encodeURIComponent(absoluteUrl)}&embedded=true`
     : `${url}#toolbar=0`;
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 bg-black/95 backdrop-blur-2xl"
     >
-      <button 
+      <button
         onClick={onClose}
-        className="absolute top-4 right-4 md:top-8 md:right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[110]"
-        title="Close"
+        className="absolute top-4 end-4 md:top-8 md:end-8 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[110] cursor-pointer"
+        aria-label="Close CV viewer"
       >
         <XIcon className="w-6 h-6 md:w-8 md:h-8 text-white" />
       </button>
 
-      <motion.div 
-        initial={{ y: 50, opacity: 0, scale: 0.95 }}
+      <motion.div
+        initial={{ y: 30, opacity: 0, scale: 0.97 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 50, opacity: 0, scale: 0.95 }}
+        exit={{ y: 30, opacity: 0, scale: 0.97 }}
         className="w-full max-w-5xl h-[85vh] md:h-[90vh] bg-white dark:bg-[#0c0c0e] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col border border-gray-200 dark:border-white/10"
       >
         {isMobile ? (
@@ -56,27 +55,27 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
               <h3 className="text-sm font-bold text-white uppercase tracking-widest">
                 {language === 'en' ? 'Curriculum Vitae' : 'السيرة الذاتية'}
               </h3>
-              <p className="text-[10px] text-gray-400 mt-1 px-4 leading-normal">
-                {language === 'en' 
-                  ? 'Mobile browsers may restrict inline PDF viewing. For the absolute best reading experience with full pinch-to-zoom, use the options below:' 
-                  : 'قد تفرض متصفحات الهاتف قيودًا على عرض ملفات PDF. للحصول على أفضل تجربة قراءة مع ميزة التكبير والتصغير الكاملة، استخدم الخيارات أدناه:'}
+              <p className="text-[11px] text-gray-400 mt-1 px-4 leading-normal">
+                {language === 'en'
+                  ? 'Mobile browsers may restrict inline PDF viewing. Use the options below for full zoom:'
+                  : 'قد تفرض متصفحات الهاتف قيودًا على عرض ملفات PDF. استخدم الخيارات أدناه للتكبير الكامل:'}
               </p>
             </div>
-            
+
             <div className="flex gap-2 w-full">
-              <a 
+              <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl transition-all text-xs uppercase tracking-wider text-center"
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl transition-all text-xs uppercase tracking-wider text-center"
               >
                 <Eye className="w-4 h-4" />
                 <span>{language === 'en' ? 'Open Fullscreen' : 'فتح ملء الشاشة'}</span>
               </a>
-              <a 
+              <a
                 href={url}
                 download="Abdulrahman Kamal CV.pdf"
-                className="flex-1 flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-3 rounded-xl transition-all text-xs uppercase tracking-wider text-center border border-white/10"
+                className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-3 rounded-xl transition-all text-xs uppercase tracking-wider text-center border border-white/10"
               >
                 <Download className="w-4 h-4" />
                 <span>{language === 'en' ? 'Download PDF' : 'تحميل الملف'}</span>
@@ -84,8 +83,8 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
             </div>
           </div>
         ) : (
-          <div className="absolute top-4 left-4 flex gap-2 z-10">
-            <a 
+          <div className="absolute top-4 start-4 flex gap-2 z-10">
+            <a
               href={url}
               target="_blank"
               rel="noopener noreferrer"
@@ -95,7 +94,7 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
               <Eye className="w-3.5 h-3.5" />
               <span>Fullscreen</span>
             </a>
-            <a 
+            <a
               href={url}
               download="Abdulrahman Kamal CV.pdf"
               className="px-3 py-1.5 bg-black/85 backdrop-blur-md hover:bg-black text-[10px] font-black uppercase tracking-widest text-white border border-white/10 rounded-lg flex items-center gap-1.5 transition-all"
@@ -108,89 +107,62 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
         )}
 
         <div className="flex-1 w-full h-full relative bg-gray-50 dark:bg-black/40">
-          <iframe 
-            src={embedUrl} 
+          <iframe
+            src={embedUrl}
             className="w-full h-full border-none"
             title="CV Viewer"
           />
         </div>
-
-        {!isMobile && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/80 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/10 pointer-events-none">
-            Document Viewer
-          </div>
-        )}
       </motion.div>
     </motion.div>
   );
 }
 
-function GloriousName({ text }: { text: string }) {
-  return (
-    <div className="relative inline-block group px-4">
-      {/* Glitch Layers */}
-      <div className="relative z-10">
-        <div className="absolute inset-0 text-red-500 mix-blend-screen font-black pointer-events-none glitch-red opacity-0 group-hover:opacity-100 transition-opacity">
-          {text}
-        </div>
-        
-        <div className="absolute inset-0 text-cyan-400 mix-blend-screen font-black pointer-events-none glitch-cyan opacity-0 group-hover:opacity-100 transition-opacity">
-          {text}
-        </div>
-
-        {/* Main Text */}
-        <motion.h2 
-          animate={{ 
-            opacity: [1, 0.98, 1, 0.95, 1],
-            skewX: [0, 0.5, 0, -0.5, 0]
-          }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="relative text-[#1D1D1F] dark:text-white font-black"
-        >
-          {text}
-        </motion.h2>
-      </div>
-
-      {/* Underline Accents */}
-      <motion.div 
-        initial={{ width: 0 }}
-        animate={{ width: '100%' }}
-        transition={{ duration: 1, delay: 0.5 }}
-        className="h-px bg-gradient-to-r from-transparent via-gray-500/50 to-transparent mt-2"
-      />
-    </div>
-  );
-}
+const DEFAULT_PROFILE: Profile = {
+  name: 'Abdulrahman Kamal',
+  title: 'Cybersecurity Engineer',
+  bio: 'Dedicated professional focused on advancing national cybersecurity through robust infrastructure frameworks, strict policies, and defensive operations.',
+  location: 'Aden, Yemen',
+  email: 'Abdulrahmankamal609@gmail.com',
+  phone: '',
+  linkedin: 'https://linkedin.com/in/abdulrahman-kamal/',
+  github: 'https://github.com/GIGA-YZ',
+  photoUrl: '',
+  cvUrl: '',
+};
 
 export default function AboutPage() {
-  const [profile, setProfile] = useState<Profile| null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
+  const [specsLoaded, setSpecsLoaded] = useState(false);
   const [showCV, setShowCV] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const { language, t } = useLanguage();
 
   useEffect(() => {
     document.title = 'Abdulrahman Kamal | Portfolio';
 
     const unsubProfile = onSnapshot(doc(db, 'profile', 'main'), (snapshot) => {
-      if (snapshot.exists()) setProfile(snapshot.data() as Profile);
+      if (snapshot.exists()) {
+        setProfile(snapshot.data() as Profile);
+        setAvatarFailed(false);
+      }
     }, (err) => handleFirestoreError(err, OperationType.GET, 'profile/main'));
 
     const unsubSettings = onSnapshot(doc(db, 'settings', 'config'), (snapshot) => {
       if (snapshot.exists()) setSettings(snapshot.data() as AppSettings);
-      setLoading(false);
     }, (err) => {
-      console.warn("Settings fetch failed, using fallbacks", err);
-      setLoading(false);
+      console.warn('Settings fetch failed, using fallbacks', err);
     });
 
     const qSpecs = query(collection(db, 'specializations'), orderBy('order', 'asc'));
     const unsubSpecs = onSnapshot(qSpecs, (snapshot) => {
       setSpecializations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Specialization)));
+      setSpecsLoaded(true);
     }, (err) => {
-      console.warn("Specializations fetch failed, using fallbacks", err);
+      console.warn('Specializations fetch failed, using fallbacks', err);
+      setSpecsLoaded(true);
     });
 
     return () => {
@@ -200,215 +172,245 @@ export default function AboutPage() {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32 font-mono text-blue-500 tracking-widest text-xs uppercase">
-        <Typewriter text={t('initializing')} speed={20} />
-      </div>
-    );
-  }
-
-  const data: Profile = profile || {
-    name: 'Abdulrahman Kamal',
-    title: 'Cybersecurity Engineer',
-    bio: 'Dedicated professional focused on advancing national cybersecurity through robust infrastructure frameworks, strict policies, and defensive operations.',
-    location: 'Aden, Yemen',
-    email: 'Abdulrahmankamal609@gmail.com',
-    phone: '',
-    linkedin: 'https://linkedin.com/in/abdulrahman-kamal/',
-    github: 'https://github.com/GIGA-YZ',
-    photoUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
-    cvUrl: ''
-  };
-
+  const data: Profile = profile || DEFAULT_PROFILE;
   const nameParts = data.name.split(' ');
   const firstName = nameParts[0];
   const lastName = nameParts.slice(1).join(' ');
 
   return (
-    <PageWrapper className="max-w-5xl mx-auto space-y-32">
+    <PageWrapper className="max-w-5xl mx-auto space-y-24 sm:space-y-32">
       {/* Centered Hero Section */}
-      <section id="profile-hero" className="flex flex-col items-center text-center gap-16 pt-12">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+      <section id="profile-hero" className="flex flex-col items-center text-center gap-10 sm:gap-12 pt-6 sm:pt-10">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.88 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="relative"
         >
-          <div className="w-64 h-64 md:w-80 md:h-80 rounded-full overflow-hidden glass-md p-1.5 relative group">
-            <img 
-              src={data.photoUrl || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800"} 
-              alt="Profile" 
-              className="w-full h-full object-cover rounded-full transition-all duration-1000 scale-105 group-hover:scale-100"
-            />
-            <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          {/* Outer orbital ring */}
+          <div className="hidden sm:block absolute -inset-3 rounded-full border border-dashed border-blue-500/30 animate-spin-slow pointer-events-none" />
+          <div className="w-44 h-44 sm:w-60 sm:h-60 md:w-72 md:h-72 rounded-full overflow-hidden glass-md p-1.5 relative group shadow-xl shadow-blue-500/10">
+            {data.photoUrl && !avatarFailed ? (
+              <img
+                src={data.photoUrl}
+                alt={data.name}
+                fetchPriority="high"
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarFailed(true)}
+                className="w-full h-full object-cover rounded-full transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-600/15 to-indigo-600/15 dark:from-blue-500/20 dark:to-indigo-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <Shield className="w-16 h-16 sm:w-20 sm:h-20" />
+              </div>
+            )}
           </div>
-          
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute -inset-4 border-2 border-dashed border-blue-500/20 rounded-full pointer-events-none"
-          />
         </motion.div>
 
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-8 w-full"
-        >
-          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] border border-blue-500/20 mx-auto">
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-            >
-              <Shield className="w-3.5 h-3.5" />
-            </motion.div>
-            <span>{t('liveFeed')}</span>
-          </div>
-
-          <h1 className="text-6xl md:text-9xl font-black tracking-tighter uppercase leading-[0.85] flex flex-col items-center">
-            <div className="overflow-hidden py-2">
-              <motion.div
-                initial={{ y: 150 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <GloriousName text={firstName} />
-              </motion.div>
-            </div>
-            <div className="overflow-hidden py-2">
-              <motion.div
-                initial={{ y: 150 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <GloriousName text={lastName} />
-              </motion.div>
-            </div>
-          </h1>
-
-          <div className="space-y-4 max-w-2xl mx-auto">
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="text-2xl md:text-3xl text-gray-400 dark:text-gray-500 font-bold tracking-tight"
-            >
-               {data.title}
-            </motion.p>
-            <div className="text-lg md:text-xl text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
-              <Typewriter text={data.bio} delay={1200} speed={40} />
-            </div>
-          </div>
-
-          <motion.div 
+        <div className="space-y-6 w-full">
+          <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5 }}
-            className="flex flex-wrap justify-center gap-6 pt-8"
+            transition={{ delay: 0.05, duration: 0.3 }}
+            className="inline-flex items-center justify-center gap-2 text-xs font-mono font-bold uppercase tracking-[0.25em] text-blue-600 dark:text-blue-400"
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span>{t('liveFeed')}</span>
+          </motion.p>
+
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight uppercase leading-[0.92] text-[#1D1D1F] dark:text-white flex flex-col items-center text-balance">
+            <ScrambleHeader text={firstName} as="span" delay={40} duration={360} />
+            {lastName && (
+              <motion.span
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+                className="relative mt-1 pb-2 px-3 inline-block"
+              >
+                <ScrambleHeader text={lastName} as="span" delay={90} duration={400} />
+                <motion.span
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.22, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute bottom-0 inset-x-0 h-[2px] origin-center bg-gradient-to-r from-transparent via-blue-500/60 to-transparent"
+                />
+              </motion.span>
+            )}
+          </h1>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.14, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-4 max-w-2xl mx-auto"
+          >
+            <p className="text-xl sm:text-2xl md:text-3xl text-gray-700 dark:text-gray-300 font-bold tracking-tight">
+              {data.title}
+            </p>
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
+              {data.bio}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-wrap justify-center items-center gap-4 pt-4"
           >
             {data.email && (
-              <button onClick={() => openLink(`mailto:${data.email}`)} className="glass-sm px-8 py-4 rounded-full hover:scale-105 transition-all hover:bg-blue-500/10 flex items-center space-x-3 border border-blue-500/20 shadow-xl group">
-                <Mail className="w-5 h-5 text-blue-500" />
-                <span className="text-xs font-black uppercase tracking-widest">{t('establishLink')}</span>
-              </button>
+              <motion.button
+                whileHover={{ y: -2, scale: 1.02 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => openLink(`mailto:${data.email}`)}
+                className="glass-sm px-7 py-3.5 rounded-full hover:bg-blue-500/10 hover:border-blue-500/40 transition-colors flex items-center gap-2.5 shadow-sm cursor-pointer"
+              >
+                <Mail className="w-4.5 h-4.5 text-blue-600 dark:text-blue-400" />
+                <span className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">{t('establishLink')}</span>
+              </motion.button>
             )}
-            <div className="flex space-x-4">
+
+            <div className="flex items-center gap-3">
               {data.linkedin && (
-                <button onClick={() => openLink(data.linkedin!)} className="glass-sm p-4 rounded-full hover:scale-110 transition-all hover:bg-blue-500/10 border border-white/10">
-                  <Linkedin className="w-6 h-6 text-gray-500" />
-                </button>
+                <motion.button
+                  whileHover={{ y: -2, scale: 1.06 }}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => openLink(data.linkedin!)}
+                  className="glass-sm min-w-[44px] min-h-[44px] p-3 rounded-full hover:bg-blue-500/10 hover:border-blue-500/30 transition-colors cursor-pointer flex items-center justify-center"
+                  aria-label="LinkedIn profile"
+                  title="LinkedIn"
+                >
+                  <Linkedin className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                </motion.button>
               )}
               {data.github && (
-                <button onClick={() => openLink(data.github!)} className="glass-sm p-4 rounded-full hover:scale-110 transition-all hover:bg-blue-500/10 border border-white/10">
-                  <Github className="w-6 h-6 text-gray-500" />
-                </button>
+                <motion.button
+                  whileHover={{ y: -2, scale: 1.06 }}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => openLink(data.github!)}
+                  className="glass-sm min-w-[44px] min-h-[44px] p-3 rounded-full hover:bg-blue-500/10 hover:border-blue-500/30 transition-colors cursor-pointer flex items-center justify-center"
+                  aria-label="GitHub profile"
+                  title="GitHub"
+                >
+                  <Github className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                </motion.button>
               )}
             </div>
 
             {data.cvUrl && (
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <button 
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-center">
+                <motion.button
+                  whileHover={{ y: -2, scale: 1.02 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={() => setShowCV(true)}
-                  className="flex-1 md:flex-initial glass-sm px-8 py-4 rounded-full hover:scale-[1.03] active:scale-[0.98] transition-all bg-white/5 border border-white/10 flex items-center justify-center space-x-3 group shadow-xl hover:border-blue-500/30 hover:bg-blue-500/5 cursor-pointer"
+                  className="glass-sm px-7 py-3.5 rounded-full hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors flex items-center justify-center gap-2.5 shadow-sm cursor-pointer"
                   title={language === 'en' ? 'View My CV' : 'عرض سيرتي الذاتية'}
                 >
-                  <Eye className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+                  <Eye className="w-4.5 h-4.5 text-gray-600 dark:text-gray-400" />
                   <span className="text-xs font-black uppercase tracking-widest text-[#1D1D1F] dark:text-[#F5F5F7] whitespace-nowrap">
                     {t('downloadCv')}
                   </span>
-                </button>
-                <a 
+                </motion.button>
+                <motion.a
+                  whileHover={{ y: -2, scale: 1.06 }}
+                  whileTap={{ scale: 0.92 }}
                   href={data.cvUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   download="Abdulrahman Kamal CV.pdf"
-                  className="glass-sm p-4 rounded-full hover:scale-[1.08] active:scale-[0.95] transition-all bg-white/5 border border-white/10 flex items-center justify-center group shadow-xl hover:border-emerald-500/30 hover:bg-emerald-500/5 flex-shrink-0 cursor-pointer"
+                  className="glass-sm min-w-[44px] min-h-[44px] p-3 rounded-full hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-colors flex items-center justify-center shadow-sm cursor-pointer"
                   title={language === 'en' ? 'Download CV' : 'تحميل سيرتي الذاتية'}
+                  aria-label="Download CV"
                 >
-                  <Download className="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" />
-                </a>
+                  <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </motion.a>
               </div>
             )}
           </motion.div>
-        </motion.div>
+        </div>
       </section>
 
-      {/* Mobile view interactive navigation suggesting next sections */}
-      <MobileExploreNavigation />
+      {/* Interactive section navigator */}
+      <MobileExploreNavigation settings={settings} />
 
-      <section id="specializations" className="space-y-16">
-        <div className="text-center space-y-4">
-          <h2 className="text-5xl font-black tracking-tighter uppercase italic text-blue-500/20 dark:text-white/10">{t('specializations')}</h2>
+      <section id="specializations" className="space-y-12">
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight uppercase text-gray-900 dark:text-white">
+            {t('specializations')}
+          </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {specializations && specializations.length > 0 ? (
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          {specializations.length > 0 ? (
             specializations.map((spec, i) => (
               <motion.div
                 key={spec.id || i}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -15, borderColor: 'rgba(59, 130, 246, 0.5)' }}
-                className="glass-sm p-12 rounded-[3rem] border border-white/10 shadow-2xl group transition-all duration-500 flex flex-col justify-between"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{ delay: i * 0.06, duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ y: -5 }}
+                className="glass-sm p-7 sm:p-9 rounded-3xl shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-colors duration-300 flex flex-col justify-between group"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-8 gap-4">
-                    <div className="w-12 h-1 bg-blue-500/30 group-hover:w-20 transition-all duration-700 flex-shrink-0" />
+                  <div className="flex items-center justify-between mb-6 gap-4">
+                    <div className="w-10 h-1 bg-blue-500/40 group-hover:w-16 transition-all duration-300 rounded-full flex-shrink-0" />
                     {spec.imageUrl && (
                       <ImageViewer images={[spec.imageUrl]} label={spec.title}>
-                        <div className="w-28 sm:w-32 md:w-36 aspect-video rounded-2xl overflow-hidden glass-sm border border-white/10 flex-shrink-0 bg-black/40 relative shadow-lg group/img hover:border-blue-500/50 transition-all duration-300">
-                          <img 
-                            src={spec.imageUrl} 
-                            alt={spec.title} 
-                            className="w-full h-full object-cover rounded-2xl group-hover/img:scale-105 transition-transform duration-500" 
-                            referrerPolicy="no-referrer" 
+                        <div className="w-28 sm:w-32 aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 flex-shrink-0 bg-gray-100 dark:bg-black/40 relative shadow-sm hover:border-blue-500/50 transition-colors">
+                          <img
+                            src={spec.imageUrl}
+                            alt={spec.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
                           />
-                          <div className="absolute inset-0 bg-blue-500/0 group-hover/img:bg-blue-500/15 transition-colors duration-300 pointer-events-none" />
                         </div>
                       </ImageViewer>
                     )}
                   </div>
-                  <h3 className="text-3xl font-black mb-6 tracking-tight leading-none italic group-hover:text-blue-500 transition-colors uppercase break-words">{spec.title}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 leading-relaxed font-medium text-lg">{spec.description}</p>
+                  <h3 className="text-2xl font-bold mb-4 tracking-tight leading-snug text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors break-words">
+                    {spec.title}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm sm:text-base">
+                    {spec.description}
+                  </p>
                 </div>
               </motion.div>
             ))
+          ) : !specsLoaded ? (
+            [0, 1, 2].map((skeletonIdx) => (
+              <div key={skeletonIdx} className="glass-sm p-7 sm:p-9 rounded-3xl animate-pulse space-y-4">
+                <div className="h-1 w-12 bg-gray-200 dark:bg-white/10 rounded" />
+                <div className="h-7 w-3/4 bg-gray-200 dark:bg-white/10 rounded-lg" />
+                <div className="space-y-2">
+                  <div className="h-4 w-full bg-gray-200 dark:bg-white/10 rounded" />
+                  <div className="h-4 w-5/6 bg-gray-200 dark:bg-white/10 rounded" />
+                </div>
+              </div>
+            ))
           ) : (
-            [t('soc'), t('forensics'), t('linux')].map((spec, i) => (
+            [
+              { title: t('soc'), desc: t('socDesc') },
+              { title: t('forensics'), desc: t('forensicsDesc') },
+              { title: t('linux'), desc: t('linuxDesc') },
+            ].map((spec, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -15, borderColor: 'rgba(59, 130, 246, 0.5)' }}
-                className="glass-sm p-12 rounded-[3rem] border border-white/10 shadow-2xl group transition-all duration-500"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{ delay: i * 0.06, duration: 0.36, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ y: -5 }}
+                className="glass-sm p-7 sm:p-9 rounded-3xl shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-colors duration-300 group"
               >
-                <div className="w-12 h-1 bg-blue-500/30 mb-8 group-hover:w-full transition-all duration-700" />
-                <h3 className="text-3xl font-black mb-6 tracking-tight leading-none italic group-hover:text-blue-500 transition-colors uppercase">{spec}</h3>
-                <p className="text-gray-500 dark:text-gray-400 leading-relaxed font-medium text-lg">Detailed proficiency in {spec.toLowerCase()} operational frameworks.</p>
+                <div className="w-10 h-1 bg-blue-500/40 mb-6 group-hover:w-16 transition-all duration-300 rounded-full" />
+                <h3 className="text-2xl font-bold mb-4 tracking-tight leading-snug text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {spec.title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm sm:text-base">
+                  {spec.desc}
+                </p>
               </motion.div>
             ))
           )}
@@ -420,18 +422,17 @@ export default function AboutPage() {
           <CVViewer url={data.cvUrl} onClose={() => setShowCV(false)} />
         )}
       </AnimatePresence>
+
       {/* Contact Section */}
-      <section id="contact" className="space-y-16 py-20 border-t border-gray-100 dark:border-white/5">
-        <div className="text-center space-y-4">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            className="flex items-center justify-center space-x-2 text-blue-500 font-mono text-xs uppercase tracking-[0.3em]"
-          >
+      <section id="contact" className="space-y-12 py-16 border-t border-gray-200/80 dark:border-white/5">
+        <div className="text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold uppercase tracking-[0.25em]">
             <Shield className="w-4 h-4" />
             <span>{t('contact')}</span>
-          </motion.div>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic">{t('contactTitle')}</h2>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900 dark:text-white">
+            {t('contactTitle')}
+          </h2>
         </div>
 
         <div className="max-w-xl mx-auto">
@@ -443,29 +444,19 @@ export default function AboutPage() {
 }
 
 const sectionDefinitions: Record<string, { labelKey: string; path: string; icon: any; color: string }> = {
-  experience: { labelKey: 'experience', path: '/experience', icon: Briefcase, color: 'text-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20 border-indigo-500/20' },
-  projects: { labelKey: 'projects', path: '/projects', icon: FolderCode, color: 'text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/20' },
-  certificates: { labelKey: 'certificates', path: '/certificates', icon: Award, color: 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/20 border-amber-500/20' },
-  skills: { labelKey: 'skills', path: '/skills', icon: Cog, color: 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20 border-blue-500/20' },
-  blog: { labelKey: 'blog', path: '/blog', icon: BookOpen, color: 'text-rose-500 bg-rose-500/10 dark:bg-rose-500/20 border-rose-500/20' },
-  contact: { labelKey: 'contactNav', path: '/contact', icon: Mail, color: 'text-blue-600 bg-blue-500/10 dark:bg-blue-500/20 border-blue-500/20' },
+  experience: { labelKey: 'experience', path: '/experience', icon: Briefcase, color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+  projects: { labelKey: 'projects', path: '/projects', icon: FolderCode, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+  certificates: { labelKey: 'certificates', path: '/certificates', icon: Award, color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  skills: { labelKey: 'skills', path: '/skills', icon: Cog, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20' },
+  blog: { labelKey: 'blog', path: '/blog', icon: BookOpen, color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20' },
+  contact: { labelKey: 'contactNav', path: '/contact', icon: Mail, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20' },
 };
 
-function MobileExploreNavigation() {
+function MobileExploreNavigation({ settings }: { settings: AppSettings | null }) {
   const { t } = useLanguage();
-  const [settings, setSettings] = useState<any>(null);
-
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'config'), (snap) => {
-      if (snap.exists()) {
-        setSettings(snap.data());
-      }
-    });
-    return () => unsub();
-  }, []);
 
   const defaultDesktopNav = ['about', 'blog', 'experience', 'projects', 'certificates', 'skills', 'contact'];
-  const desktopOrderKeys = settings?.desktopNavOrder && settings.desktopNavOrder.length > 0 
+  const desktopOrderKeys = settings?.desktopNavOrder && settings.desktopNavOrder.length > 0
     ? [...settings.desktopNavOrder, !settings.desktopNavOrder.includes('contact') && 'contact'].filter(Boolean) as string[]
     : defaultDesktopNav;
 
@@ -485,52 +476,47 @@ function MobileExploreNavigation() {
     .filter(Boolean);
 
   return (
-    <motion.section
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true, amount: 0.1 }}
-      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-      className="w-full space-y-8 py-16 border-t border-gray-100 dark:border-white/5 text-center mt-12"
-    >
+    <section className="w-full space-y-8 py-12 border-t border-gray-200/80 dark:border-white/5 text-center">
       <div className="space-y-2">
-        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-500 animate-pulse">
+        <span className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
           {t('exploreMore')}
         </span>
-        <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
           {t('wantToSee')}
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 max-w-5xl mx-auto px-4 text-start">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5 max-w-5xl mx-auto text-start">
         {sections.map((sec, i) => {
           if (!sec) return null;
           return (
             <motion.div
               key={sec.path}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ delay: i * 0.04, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              whileHover={{ y: -3 }}
             >
               <Link
                 to={sec.path}
-                className="flex items-center justify-between p-4 bg-white/5 border border-gray-100 dark:border-white/5 rounded-3xl hover:bg-gray-100 dark:hover:bg-white/10 active:scale-[0.98] transition-all group shadow-sm"
+                className="flex items-center justify-between p-4 glass-sm rounded-2xl hover:bg-gray-100/80 dark:hover:bg-white/10 active:scale-[0.98] transition-all group shadow-sm h-full"
               >
-                <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                  <div className={`p-3 rounded-2xl border border-white/5 ${sec.color}`}>
-                    <sec.icon className="w-5 h-5 flex-shrink-0" />
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`p-2.5 rounded-xl border ${sec.color} flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                    <sec.icon className="w-4.5 h-4.5" />
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#1D1D1F] dark:text-[#F5F5F7] truncate">
                     {sec.label}
                   </span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-500 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform flex-shrink-0" />
               </Link>
             </motion.div>
           );
         })}
       </div>
-    </motion.section>
+    </section>
   );
 }
 
@@ -567,16 +553,17 @@ function ContactForm() {
 
   if (success) {
     return (
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
         className="glass-md p-8 rounded-3xl text-center space-y-4"
       >
-        <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
-          <Shield className="w-8 h-8 text-blue-500" />
+        <div className="w-14 h-14 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
+          <Shield className="w-7 h-7 text-blue-600 dark:text-blue-400" />
         </div>
-        <h3 className="text-xl font-bold uppercase tracking-tight">{t('contactSuccess')}</h3>
-        <button onClick={() => setSuccess(false)} className="text-blue-500 font-mono text-xs uppercase tracking-widest hover:underline">
+        <h3 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">{t('contactSuccess')}</h3>
+        <button onClick={() => setSuccess(false)} className="text-blue-600 dark:text-blue-400 font-mono text-xs uppercase tracking-widest hover:underline cursor-pointer">
           {t('sendAnother')}
         </button>
       </motion.div>
@@ -584,48 +571,47 @@ function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 pl-4">{t('contactName')}</label>
-        <input 
+        <label className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 ps-2 block">{t('contactName')}</label>
+        <input
           required
           name="name"
           type="text"
-          className="w-full glass-md px-6 py-4 rounded-2xl border-transparent focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400"
+          className="w-full glass-md px-5 py-3.5 rounded-2xl focus:border-blue-500 outline-none transition-colors text-gray-900 dark:text-white placeholder:text-gray-400"
           placeholder={t('placeholderName')}
         />
       </div>
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 pl-4">{t('contactEmail')}</label>
-        <input 
+        <label className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 ps-2 block">{t('contactEmail')}</label>
+        <input
           required
           name="email"
           type="email"
-          className="w-full glass-md px-6 py-4 rounded-2xl border-transparent focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400"
+          className="w-full glass-md px-5 py-3.5 rounded-2xl focus:border-blue-500 outline-none transition-colors text-gray-900 dark:text-white placeholder:text-gray-400"
           placeholder={t('placeholderEmail')}
         />
       </div>
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 pl-4">{t('contactMessage')}</label>
-        <textarea 
+        <label className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 ps-2 block">{t('contactMessage')}</label>
+        <textarea
           required
           name="message"
-          rows={5}
-          className="w-full glass-md px-6 py-4 rounded-3xl border-transparent focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400 resize-none"
+          rows={4}
+          className="w-full glass-md px-5 py-3.5 rounded-2xl focus:border-blue-500 outline-none transition-colors text-gray-900 dark:text-white placeholder:text-gray-400 resize-none"
           placeholder={t('placeholderMessage')}
         />
       </div>
-      
+
       {error && <p className="text-red-500 text-xs font-mono text-center">{error}</p>}
 
-      <button 
+      <button
         disabled={loading}
-        className="w-full glass-md px-8 py-6 rounded-3xl hover:bg-blue-500 hover:text-white transition-all transform hover:scale-[1.02] active:scale-[0.98] font-black uppercase tracking-[0.2em] flex items-center justify-center space-x-3 group"
+        className="w-full bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl transition-colors font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-blue-500/20 cursor-pointer disabled:opacity-50"
       >
         <span>{loading ? t('placeholderTransmitting') : t('contactSend')}</span>
-        {!loading && <Shield className="w-5 h-5 group-hover:rotate-12 transition-transform" />}
+        {!loading && <Shield className="w-4.5 h-4.5" />}
       </button>
     </form>
   );
 }
-

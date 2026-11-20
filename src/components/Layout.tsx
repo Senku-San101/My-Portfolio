@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, ReactNode, useRef } from 'react';
-import { Shield, Briefcase, Award, FolderCode, User, Cog, LogOut, Sun, Moon, Languages, BookOpen, FileText, Menu, X, Mail, Terminal } from 'lucide-react';
+import { Shield, Briefcase, Award, FolderCode, User, Cog, LogOut, Sun, Moon, BookOpen, FileText, Menu, Mail } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -41,11 +41,7 @@ export default function Layout({ children }: LayoutProps) {
   const [profile, setProfile] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
   
-  // Sidebar Expand State
-  const [isSidebarLocked, setIsSidebarLocked] = useState(false);
-  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isNavExpanded, setIsNavExpanded] = useState(window.innerWidth < 1024);
+  const [isNavExpanded, setIsNavExpanded] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -124,23 +120,8 @@ export default function Layout({ children }: LayoutProps) {
     })
     .filter(Boolean);
 
-  // Sidebar is expanded if locked (by button), hovered (on desktop), or opened on mobile
-  const isSidebarExpanded = isSidebarLocked || (isDesktop && isSidebarHovered) || mobileMenuOpen;
-
-  const handleMouseEnter = () => {
-    if (isDesktop) {
-      setIsSidebarHovered(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (isDesktop) {
-      setIsSidebarHovered(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#FBFBFD] dark:bg-black text-[#1D1D1F] dark:text-[#F5F5F7] selection:bg-blue-500/30 overflow-x-hidden flex flex-col">
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-black text-[#1D1D1F] dark:text-[#F5F5F7] selection:bg-blue-500/30 overflow-x-clip flex flex-col">
       {/* Background Gradients and Grid */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div 
@@ -160,18 +141,23 @@ export default function Layout({ children }: LayoutProps) {
       <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-100 dark:border-white/5 px-4 md:px-8 py-3.5 flex items-center justify-between">
         <Link 
           to="/" 
-          className="flex items-center gap-2.5"
+          className="flex items-center gap-2.5 group"
         >
-          <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl flex-shrink-0">
+          <motion.div
+            whileHover={{ rotate: [0, -8, 8, 0], scale: 1.05 }}
+            whileTap={{ scale: 0.94 }}
+            transition={{ duration: 0.35 }}
+            className="p-2 bg-blue-500/10 text-blue-500 rounded-xl flex-shrink-0"
+          >
             <Shield className="w-4.5 h-4.5 text-blue-500" />
-          </div>
+          </motion.div>
           <span className="font-black tracking-wider text-xs text-gray-900 dark:text-white uppercase font-sans">
             AK.SEC
           </span>
         </Link>
 
         {/* Sections Navigator for Desktop/PC view */}
-        <nav className="hidden lg:flex items-center gap-1 bg-gray-100/50 dark:bg-white/[0.02] border border-gray-200/50 dark:border-zinc-800/40 p-1 rounded-full">
+        <nav className="hidden lg:flex items-center gap-5">
           {navItems.map((item) => {
             if (!item) return null;
             const isActive = location.pathname === item.path;
@@ -179,14 +165,20 @@ export default function Layout({ children }: LayoutProps) {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
-                  isActive 
-                    ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/15 scale-102' 
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+                className={`relative text-xs font-semibold whitespace-nowrap shrink-0 py-1.5 transition-colors ${
+                  isActive
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                <item.icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
+                {item.label}
+                {isActive && (
+                  <motion.div
+                    layoutId="desktop-nav-underline"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    className="absolute bottom-0 inset-x-0 h-[2px] rounded-full bg-blue-600 dark:bg-blue-400"
+                  />
+                )}
               </Link>
             );
           })}
@@ -194,37 +186,54 @@ export default function Layout({ children }: LayoutProps) {
 
         <div className="flex items-center gap-2 md:gap-3">
           {/* Theme Toggle */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.92 }}
             onClick={toggleTheme}
-            className="p-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer"
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer overflow-hidden"
             aria-label="Toggle theme"
           >
-            {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-yellow-400" />}
-          </button>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={theme}
+                initial={{ opacity: 0, rotate: -45, scale: 0.7 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: 45, scale: 0.7 }}
+                transition={{ duration: 0.16 }}
+                className="flex items-center justify-center"
+              >
+                {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-yellow-400" />}
+              </motion.span>
+            </AnimatePresence>
+          </motion.button>
 
           {/* Language Toggle */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.92 }}
             onClick={toggleLanguage}
-            className="px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all text-[10px] font-black uppercase tracking-wider cursor-pointer"
+            className="min-w-[40px] min-h-[40px] px-2.5 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-[10px] font-black uppercase tracking-wider cursor-pointer"
             aria-label="Toggle language"
           >
             {language === 'en' ? 'AR' : 'EN'}
-          </button>
+          </motion.button>
 
           {/* Admin and LogOut buttons */}
           {user && (
-            <div className="flex items-center gap-1.5 border-l border-gray-200 dark:border-white/10 pl-2.5 md:pl-3">
+            <div className="flex items-center gap-1.5 border-s border-gray-200 dark:border-white/10 ps-2.5 md:ps-3">
               <Link
                 to="/admin"
-                className="p-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
                 title={t('admin')}
+                aria-label={t('admin')}
               >
                 <Cog className="w-4 h-4" />
               </Link>
               <button
                 onClick={() => auth.signOut()}
-                className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all cursor-pointer"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all cursor-pointer"
                 title={t('signOut')}
+                aria-label={t('signOut')}
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -245,7 +254,7 @@ export default function Layout({ children }: LayoutProps) {
           width: isNavExpanded ? (isDesktop ? 180 : 150) : (isDesktop ? 56 : 48)
         }}
         transition={{ type: 'spring', damping: 28, stiffness: 400 }}
-        className={`fixed right-3 md:right-6 top-1/2 -translate-y-1/2 z-50 flex lg:hidden flex-col items-center p-1.5 md:p-2 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border border-gray-200/50 dark:border-zinc-800/40 ${
+        className={`fixed end-3 md:end-6 top-1/2 -translate-y-1/2 z-50 flex lg:hidden flex-col items-center p-1.5 md:p-2 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border border-gray-200/70 dark:border-zinc-800/60 ${
           isNavExpanded ? 'rounded-[2rem]' : 'rounded-full'
         } shadow-lg dark:shadow-none space-y-2 md:space-y-2.5 select-none transition-all duration-300`}
         id="unified-sidebar-nav"
@@ -253,12 +262,13 @@ export default function Layout({ children }: LayoutProps) {
         {/* Three lines menu toggle button */}
         <button
           onClick={() => setIsNavExpanded(!isNavExpanded)}
-          className={`p-2 md:p-2.5 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
+          className={`min-w-[36px] min-h-[36px] p-2 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
             isNavExpanded 
               ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' 
-              : 'text-gray-400 hover:text-gray-900 dark:hover:text-white border-transparent hover:bg-gray-100 dark:hover:bg-white/5'
+              : 'text-gray-500 hover:text-gray-900 dark:hover:text-white border-transparent hover:bg-gray-100 dark:hover:bg-white/5'
           }`}
           title={isNavExpanded ? "Hide Section Names" : "Show Section Names"}
+          aria-label={isNavExpanded ? "Collapse navigation" : "Expand navigation"}
         >
           <Menu className="w-4 h-4 md:w-4.5 md:h-4.5" />
         </button>
@@ -304,7 +314,7 @@ export default function Layout({ children }: LayoutProps) {
 
               {/* Tooltip (Only shown when NOT expanded, on hover) */}
               {!isNavExpanded && (
-                <div className="absolute right-full mr-3.5 top-1/2 -translate-y-1/2 bg-gray-900 dark:bg-zinc-950 text-white dark:text-zinc-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-gray-800 dark:border-zinc-800/50 opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 shadow-xl hidden md:block whitespace-nowrap">
+                <div className="absolute end-full me-3.5 top-1/2 -translate-y-1/2 bg-gray-900 dark:bg-zinc-950 text-white dark:text-zinc-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-gray-800 dark:border-zinc-800/50 opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 shadow-xl hidden md:block whitespace-nowrap">
                   {item.label}
                 </div>
               )}
@@ -323,14 +333,14 @@ export default function Layout({ children }: LayoutProps) {
           <motion.div 
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="fixed bottom-6 start-6 md:start-8 z-45"
+            className="fixed bottom-6 start-4 md:start-8 z-40"
           >
             <a
               href={profile.cvUrl}
               target="_blank"
               rel="noopener noreferrer"
               download="Abdulrahman Kamal CV.pdf"
-              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 outline-none text-white font-bold py-3 px-5 rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_25px_rgba(37,99,235,0.6)] transition-all transform hover:-translate-y-0.5 group active:scale-95 text-xs uppercase tracking-wider font-sans cursor-pointer"
+              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 outline-none text-white font-bold py-3 px-4 sm:px-5 rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_25px_rgba(37,99,235,0.6)] transition-all transform hover:-translate-y-0.5 group active:scale-95 text-xs uppercase tracking-wider font-sans cursor-pointer"
               id="download-cv-button"
             >
               <FileText className="w-4 h-4 text-white" />

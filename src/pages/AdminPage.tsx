@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Plus, Trash2, Save, User, Briefcase, Award, FolderCode, Cog, ChevronRight, ChevronUp, ChevronDown, X, Image as ImageIcon, Loader2, ArrowLeft, Mail, Activity, BookOpen, Settings, Lock, Eye, Key, ShieldCheck, Brain, FileText, Upload, CheckCircle2, Cpu, Copy, Clock, Globe, Phone, MessageSquare, Linkedin, Github, Video, Play, Terminal, Search, Laptop, Smartphone, Check
+  Plus, Trash2, Save, User, Briefcase, Award, FolderCode, Cog, ChevronRight, ChevronUp, ChevronDown, X, Image as ImageIcon, Loader2, ArrowLeft, Mail, Activity, BookOpen, Settings, Lock, Eye, Key, ShieldCheck, Brain, FileText, Upload, CheckCircle2, Cpu, Copy, Clock, Globe, Phone, MessageSquare, Linkedin, Github, Video, Play, Terminal, Search, Laptop, Smartphone, Check, AlertTriangle
 } from 'lucide-react';
 import { 
   collection, query, orderBy, onSnapshot, 
@@ -17,8 +17,22 @@ import { AVAILABLE_SERVICE_ICONS, getServiceIcon } from '../lib/iconMap';
 import OpsVaultEditor from '../components/admin/OpsVaultEditor';
 import SecurityLogsViewer from '../components/admin/SecurityLogsViewer';
 
+type ToastType = 'success' | 'error';
+interface AdminToast { id: number; message: string; type: ToastType; }
+const AdminToastContext = createContext<(message: string, type?: ToastType) => void>(() => {});
+const useAdminToast = () => useContext(AdminToastContext);
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'experience' | 'projects' | 'certificates' | 'skills' | 'specializations' | 'blogs' | 'contact' | 'settings' | 'messages' | 'analytics' | 'ops_vault' | 'security_logs'>('profile');
+  const [toasts, setToasts] = useState<AdminToast[]>([]);
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
 
   useEffect(() => {
     document.title = `Admin | ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
@@ -32,70 +46,108 @@ export default function AdminPage() {
   }, []);
 
   return (
-    <div className="space-y-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Admin Portal</h1>
-          <p className="text-gray-500 dark:text-gray-400">Manage your portfolio content in real-time.</p>
+    <AdminToastContext.Provider value={showToast}>
+      <div className="space-y-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Admin Portal</h1>
+            <p className="text-gray-500 dark:text-gray-400">Manage your portfolio content in real-time.</p>
+          </div>
+          <Link to="/" className="btn-secondary w-fit">
+            <ArrowLeft className="w-4 h-4 me-2 rtl:rotate-180" /> Back to Website
+          </Link>
         </div>
-        <Link to="/" className="btn-secondary w-fit">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Website
-        </Link>
+
+        <div className="flex overflow-x-auto pb-4 gap-3 sm:gap-4 no-scrollbar">
+          {[
+            { id: 'profile', label: 'Profile', icon: User },
+            { id: 'specializations', label: 'Specializations', icon: Brain },
+            { id: 'experience', label: 'Experience', icon: Briefcase },
+            { id: 'projects', label: 'Projects', icon: FolderCode },
+            { id: 'certificates', label: 'Certificates', icon: Award },
+            { id: 'skills', label: 'Services', icon: Cog },
+            { id: 'ops_vault', label: 'Cyber Ops & Vault', icon: Terminal },
+            { id: 'security_logs', label: 'Login Logs', icon: ShieldCheck },
+            { id: 'blogs', label: 'Blogs', icon: BookOpen },
+            { id: 'contact', label: 'Contact Section', icon: Mail },
+            { id: 'settings', label: 'Settings', icon: Settings },
+            { id: 'messages', label: 'Inbox', icon: Mail },
+            { id: 'analytics', label: 'Analytics', icon: Activity },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === tab.id 
+                  ? 'glass-xl text-blue-600 dark:text-blue-400 shadow-lg border border-blue-500/20' 
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
+              }`}
+            >
+              <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="font-semibold text-sm sm:text-base">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="glass-md p-4 sm:p-6 md:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-gray-200 dark:border-white/10">
+          <AnimatePresence mode="wait">
+            {activeTab === 'profile' && <ProfileEditor key="profile" />}
+            {activeTab === 'specializations' && <SpecializationEditor key="specializations" />}
+            {activeTab === 'experience' && <ExperienceEditor key="experience" />}
+            {activeTab === 'projects' && <ProjectEditor key="projects" />}
+            {activeTab === 'certificates' && <CertificateEditor key="certificates" />}
+            {activeTab === 'skills' && <SkillEditor key="skills" />}
+            {activeTab === 'ops_vault' && <OpsVaultEditor key="ops_vault" />}
+            {activeTab === 'security_logs' && <SecurityLogsViewer key="security_logs" />}
+            {activeTab === 'blogs' && <BlogEditor key="blogs" />}
+            {activeTab === 'contact' && <ContactSectionEditor key="contact" />}
+            {activeTab === 'settings' && <AppSettingsEditor key="settings" />}
+            {activeTab === 'messages' && <MessageEditor key="messages" />}
+            {activeTab === 'analytics' && <AnalyticsViewer key="analytics" />}
+          </AnimatePresence>
+        </div>
       </div>
 
-      <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar">
-        {[
-          { id: 'profile', label: 'Profile', icon: User },
-          { id: 'specializations', label: 'Specializations', icon: Brain },
-          { id: 'experience', label: 'Experience', icon: Briefcase },
-          { id: 'projects', label: 'Projects', icon: FolderCode },
-          { id: 'certificates', label: 'Certificates', icon: Award },
-          { id: 'skills', label: 'Services', icon: Cog },
-          { id: 'ops_vault', label: 'Cyber Ops & Vault', icon: Terminal },
-          { id: 'security_logs', label: 'Login Logs', icon: ShieldCheck },
-          { id: 'blogs', label: 'Blogs', icon: BookOpen },
-          { id: 'contact', label: 'Contact Section', icon: Mail },
-          { id: 'settings', label: 'Settings', icon: Settings },
-          { id: 'messages', label: 'Inbox', icon: Mail },
-          { id: 'analytics', label: 'Analytics', icon: Activity },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center space-x-2 px-6 py-3 rounded-2xl transition-all whitespace-nowrap ${
-              activeTab === tab.id 
-                ? 'glass-xl text-blue-500 shadow-lg' 
-                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
-            }`}
-          >
-            <tab.icon className="w-5 h-5" />
-            <span className="font-semibold">{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="glass-md p-8 rounded-[2.5rem]">
-        <AnimatePresence mode="wait">
-          {activeTab === 'profile' && <ProfileEditor key="profile" />}
-          {activeTab === 'specializations' && <SpecializationEditor key="specializations" />}
-          {activeTab === 'experience' && <ExperienceEditor key="experience" />}
-          {activeTab === 'projects' && <ProjectEditor key="projects" />}
-          {activeTab === 'certificates' && <CertificateEditor key="certificates" />}
-          {activeTab === 'skills' && <SkillEditor key="skills" />}
-          {activeTab === 'ops_vault' && <OpsVaultEditor key="ops_vault" />}
-          {activeTab === 'security_logs' && <SecurityLogsViewer key="security_logs" />}
-          {activeTab === 'blogs' && <BlogEditor key="blogs" />}
-          {activeTab === 'contact' && <ContactSectionEditor key="contact" />}
-          {activeTab === 'settings' && <AppSettingsEditor key="settings" />}
-          {activeTab === 'messages' && <MessageEditor key="messages" />}
-          {activeTab === 'analytics' && <AnalyticsViewer key="analytics" />}
-        </AnimatePresence>
-      </div>
-    </div>
+      {typeof document !== 'undefined' && createPortal(
+        <div className="fixed bottom-4 end-4 z-[200] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+          <AnimatePresence>
+            {toasts.map(toast => (
+              <motion.div
+                key={toast.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className={`pointer-events-auto p-3.5 rounded-xl border shadow-xl backdrop-blur-xl text-xs font-semibold flex items-center gap-2.5 ${
+                  toast.type === 'success'
+                    ? 'bg-white/95 dark:bg-zinc-900/95 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-white/95 dark:bg-zinc-900/95 border-red-500/30 text-red-700 dark:text-red-300'
+                }`}
+              >
+                {toast.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                )}
+                <span className="flex-1 leading-snug">{toast.message}</span>
+                <button
+                  type="button"
+                  onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                  className="p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-white cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>,
+        document.body
+      )}
+    </AdminToastContext.Provider>
   );
 }
 
 function AnalyticsViewer() {
+  const showToast = useAdminToast();
   const [items, setItems] = useState<Visit[]>([]);
   const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -199,10 +251,10 @@ function AnalyticsViewer() {
     try {
       const deletePromises = items.map(item => deleteDoc(doc(db, 'visits', item.id!)));
       await Promise.all(deletePromises);
-      alert('Signal history purged successfully.');
+      showToast('Signal history purged successfully.', 'success');
     } catch (error) {
       console.error('Purge error:', error);
-      alert('Failed to purge history.');
+      showToast('Failed to purge history.', 'error');
     }
   };
 
@@ -215,62 +267,44 @@ function AnalyticsViewer() {
         <StatCard label="Security" value="Active" sub="Threat Monitoring" color="text-green-500" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <h3 className="text-xl font-bold flex items-center"><Activity className="mr-2 w-5 h-5 text-blue-500" /> Infrastructure Analysis</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <ResourceCard 
-              name="Firebase Firestore" 
-              status="Healthy" 
-              items={[
-                { label: 'Projects', count: counts.projects },
-                { label: 'Certs', count: counts.certificates },
-                { label: 'Blogs', count: counts.blogs },
-                { label: 'Skills', count: counts.skills }
-              ]}
-              usage="0.4% of Free Tier"
-              limit="1GiB Storage / 50k Reads Daily"
-            />
-            <ResourceCard 
-              name="Netlify Blobs (Storage)" 
-              status="Active" 
-              items={[
-                { label: 'Used Storage', count: formatBytes(blobStats.usedBytes) as any },
-                { label: 'Free Space', count: formatBytes(blobStats.totalBytes - blobStats.usedBytes) as any },
-                { label: 'Total Capacity', count: formatBytes(blobStats.totalBytes) as any },
-                { label: 'Resource Count', count: blobStats.fileCount as any }
-              ]}
-              usage={`Consumption: ${blobStats.usedPercentage.toFixed(4)}%`}
-              limit={`${formatBytes(blobStats.totalBytes)} Free Tier Bucket`}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold flex items-center"><ShieldCheck className="mr-2 w-5 h-5 text-blue-500" /> Resource Guard</h3>
-          <div className="glass-sm p-6 rounded-3xl space-y-4">
-             <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-500 uppercase font-mono">Storage Integrity</span>
-                <span className="text-green-500 font-bold">100%</span>
-             </div>
-             <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                <div className="w-full h-full bg-green-500" />
-             </div>
-             <p className="text-[10px] text-gray-500 leading-relaxed uppercase font-mono opacity-60">
-                Resource monitoring is strictly observational. No instability detected in edge synchronization or database I/O.
-             </p>
-          </div>
+      <div className="space-y-6">
+        <h3 className="text-xl font-bold flex items-center text-gray-900 dark:text-white"><Activity className="mr-2 w-5 h-5 text-blue-500" /> Infrastructure Analysis</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ResourceCard 
+            name="Firebase Firestore" 
+            status="Healthy" 
+            items={[
+              { label: 'Projects', count: counts.projects },
+              { label: 'Certs', count: counts.certificates },
+              { label: 'Blogs', count: counts.blogs },
+              { label: 'Skills', count: counts.skills }
+            ]}
+            usage="Free Tier Active"
+            limit="1GiB Storage / 50k Reads Daily"
+          />
+          <ResourceCard 
+            name="Netlify Blobs (Storage)" 
+            status="Active" 
+            items={[
+              { label: 'Used Storage', count: formatBytes(blobStats.usedBytes) as any },
+              { label: 'Free Space', count: formatBytes(blobStats.totalBytes - blobStats.usedBytes) as any },
+              { label: 'Total Capacity', count: formatBytes(blobStats.totalBytes) as any },
+              { label: 'Resource Count', count: blobStats.fileCount as any }
+            ]}
+            usage={`Consumption: ${blobStats.usedPercentage.toFixed(4)}%`}
+            limit={`${formatBytes(blobStats.totalBytes)} Free Tier Bucket`}
+          />
         </div>
       </div>
 
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold flex items-center gap-2">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
               <Activity className="w-5 h-5 text-blue-500" />
               <span>Signal History</span>
             </h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
               Real-time telemetry and network footprint from website visitors.
             </p>
           </div>
@@ -279,7 +313,7 @@ function AnalyticsViewer() {
             <button 
               onClick={wipeLogs}
               disabled={items.length === 0}
-              className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 px-4 py-2 rounded-full border border-red-500/20 disabled:opacity-50 transition-all flex items-center gap-1.5"
+              className="text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-500 hover:bg-red-500/10 px-4 py-2 rounded-full border border-red-500/20 disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Wipe Access Logs</span>
@@ -289,13 +323,13 @@ function AnalyticsViewer() {
 
         {/* Search Bar */}
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search className="w-4 h-4 absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search signals by IP, path, city, country, browser, OS, ISP, or session ID..."
-            className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-white/10 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full ps-10 pe-4 py-2.5 bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-xs font-mono focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
 
@@ -351,10 +385,10 @@ function AnalyticsViewer() {
 
           if (filteredVisits.length === 0) {
             return (
-              <div className="p-12 text-center text-gray-400 glass-md rounded-2xl border border-white/5 space-y-2">
-                <Activity className="w-8 h-8 text-gray-500 mx-auto" />
-                <div className="font-bold text-white text-sm">No Signal History Recorded</div>
-                <p className="text-xs text-gray-400">
+              <div className="p-12 text-center text-gray-500 dark:text-gray-400 glass-md rounded-2xl border border-gray-200 dark:border-white/5 space-y-2">
+                <Activity className="w-8 h-8 text-gray-400 mx-auto" />
+                <div className="font-bold text-gray-900 dark:text-white text-sm">No Signal History Recorded</div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {search ? 'No visitor signals match your search filter.' : 'Live visitor session signals will appear here.'}
                 </p>
               </div>
@@ -370,25 +404,25 @@ function AnalyticsViewer() {
                 return (
                   <div
                     key={visit.id}
-                    className="p-4 rounded-2xl bg-black/40 border border-white/10 hover:border-white/20 transition-all duration-200 space-y-3"
+                    className="p-4 rounded-2xl bg-gray-50/90 dark:bg-black/40 border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 transition-all duration-200 space-y-3"
                   >
                     {/* Header Line */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
                           <span>{visit.path || '/'}</span>
                         </span>
 
-                        <span className="text-xs font-mono font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
                           {visit.duration || 0}s session
                         </span>
 
-                        <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-gray-500" />
+                        <span className="text-xs text-gray-600 dark:text-gray-400 font-mono flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-gray-400" />
                           <span>{formatDateSafe(visit.startTime)} {formatTimeSafe(visit.startTime)}</span>
                           {relTime && (
-                            <span className="text-blue-400 font-semibold">({relTime})</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold">({relTime})</span>
                           )}
                         </span>
                       </div>
@@ -397,7 +431,7 @@ function AnalyticsViewer() {
                       <div className="flex items-center gap-2 self-end sm:self-auto">
                         <button
                           onClick={() => setExpandedVisitId(isExpanded ? null : (visit.id || ''))}
-                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-mono flex items-center gap-1 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-gray-200/70 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-mono flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <span>{isExpanded ? 'Less' : 'Inspect'}</span>
                           {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -409,7 +443,7 @@ function AnalyticsViewer() {
                               deleteDoc(doc(db, 'visits', visit.id!));
                             }
                           }}
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                          className="p-1.5 rounded-lg bg-gray-200/70 dark:bg-white/5 hover:bg-red-500/15 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
                           title="Delete log entry"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -418,29 +452,29 @@ function AnalyticsViewer() {
                     </div>
 
                     {/* 4-Box Telemetry Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 font-mono text-xs">
                       {/* IP Address */}
-                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 flex items-center justify-between gap-2">
+                      <div className="p-2.5 bg-white dark:bg-black/60 rounded-xl border border-gray-200/80 dark:border-white/5 flex items-center justify-between gap-2">
                         <div className="truncate">
                           <div className="text-[10px] text-gray-500 uppercase">IP ADDRESS</div>
-                          <div className="text-blue-400 font-bold truncate mt-0.5">{cleanVal(visit.ip, 'Localhost / Unknown')}</div>
+                          <div className="text-blue-600 dark:text-blue-400 font-bold truncate mt-0.5">{cleanVal(visit.ip, 'Localhost / Unknown')}</div>
                         </div>
                         {visit.ip && (
                           <button
                             onClick={() => copyVal(`ip_${visit.id}`, visit.ip || '')}
-                            className="text-gray-400 hover:text-white transition-colors shrink-0 p-1"
+                            className="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors shrink-0 p-1 cursor-pointer"
                             title="Copy IP"
                           >
-                            {copiedKey === `ip_${visit.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedKey === `ip_${visit.id}` ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         )}
                       </div>
 
                       {/* Location */}
-                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                      <div className="p-2.5 bg-white dark:bg-black/60 rounded-xl border border-gray-200/80 dark:border-white/5 truncate">
                         <div className="text-[10px] text-gray-500 uppercase">LOCATION</div>
-                        <div className="text-white font-semibold truncate mt-0.5 flex items-center gap-1">
-                          <Globe className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <div className="text-gray-900 dark:text-white font-semibold truncate mt-0.5 flex items-center gap-1">
+                          <Globe className="w-3 h-3 text-emerald-500 dark:text-emerald-400 shrink-0" />
                           <span className="truncate">
                             {[cleanVal(visit.city, ''), cleanVal(visit.countryCode || visit.country, '')].filter(Boolean).join(', ') || 'Localhost / Unknown'}
                           </span>
@@ -448,178 +482,183 @@ function AnalyticsViewer() {
                       </div>
 
                       {/* OS & Device */}
-                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                      <div className="p-2.5 bg-white dark:bg-black/60 rounded-xl border border-gray-200/80 dark:border-white/5 truncate">
                         <div className="text-[10px] text-gray-500 uppercase">DEVICE & OS</div>
-                        <div className="text-purple-300 font-semibold truncate mt-0.5 flex items-center gap-1">
+                        <div className="text-purple-700 dark:text-purple-300 font-semibold truncate mt-0.5 flex items-center gap-1">
                           {visit.deviceType === 'Mobile' ? <Smartphone className="w-3 h-3 shrink-0" /> : <Laptop className="w-3 h-3 shrink-0" />}
                           <span className="truncate">{cleanVal(visit.os, 'Unknown OS')} ({cleanVal(visit.deviceType, 'Desktop')})</span>
                         </div>
                       </div>
 
                       {/* Browser & ISP */}
-                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                      <div className="p-2.5 bg-white dark:bg-black/60 rounded-xl border border-gray-200/80 dark:border-white/5 truncate">
                         <div className="text-[10px] text-gray-500 uppercase">BROWSER & ISP</div>
-                        <div className="text-gray-200 font-semibold truncate mt-0.5">
-                          {cleanVal(visit.browser, 'Browser')} • <span className="text-gray-400">{cleanVal(visit.isp, 'Internal')}</span>
+                        <div className="text-gray-800 dark:text-gray-200 font-semibold truncate mt-0.5">
+                          {cleanVal(visit.browser, 'Browser')} • <span className="text-gray-500 dark:text-gray-400">{cleanVal(visit.isp, 'Internal')}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Expanding Forensic Drawer */}
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-3 p-4 bg-black/80 rounded-xl border border-white/10 font-mono text-xs space-y-4 text-gray-300 overflow-x-auto"
-                      >
-                        <div className="text-xs font-bold text-blue-400 flex items-center justify-between pb-1 border-b border-white/10">
-                          <div className="flex items-center gap-1.5">
-                            <Terminal className="w-3.5 h-3.5" />
-                            <span>Security Telemetry Log — Visit Session Signal</span>
-                          </div>
-                          <span className="text-[10px] text-gray-500 font-normal">ID: {visit.id}</span>
-                        </div>
+                    <AnimatePresence initial={false}>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-2 p-4 bg-white dark:bg-black/80 rounded-xl border border-gray-200 dark:border-white/10 font-mono text-xs space-y-4 text-gray-700 dark:text-gray-300 overflow-x-auto">
+                            <div className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center justify-between pb-1 border-b border-gray-200 dark:border-white/10">
+                              <div className="flex items-center gap-1.5">
+                                <Terminal className="w-3.5 h-3.5" />
+                                <span>Security Telemetry Log — Visit Session Signal</span>
+                              </div>
+                              <span className="text-[10px] text-gray-500 font-normal">ID: {visit.id}</span>
+                            </div>
 
-                        {/* Bento Grid keeping every single piece of information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                          {/* Session Identity Card */}
-                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
-                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
-                              <Activity className="w-3.5 h-3.5" />
-                              <span>Session Identity</span>
-                            </div>
-                            <div className="space-y-1.5 text-[11px]">
-                              <div>
-                                <div className="text-gray-500 text-[10px] uppercase">Session ID</div>
-                                <div className="flex items-center justify-between gap-2 mt-0.5">
-                                  <span className="font-mono text-white break-all select-all">{visit.sessionId || 'N/A'}</span>
-                                  {visit.sessionId && (
-                                    <button
-                                      onClick={() => copyVal(`sess_${visit.id}`, visit.sessionId || '')}
-                                      className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-all shrink-0"
-                                      title="Copy Session ID"
-                                    >
-                                      {copiedKey === `sess_${visit.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                    </button>
-                                  )}
+                            {/* Bento Grid keeping every single piece of information */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                              {/* Session Identity Card */}
+                              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-black/50 border border-gray-200/80 dark:border-white/5 space-y-2">
+                                <div className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                                  <Activity className="w-3.5 h-3.5" />
+                                  <span>Session Identity</span>
                                 </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
-                                <div>
-                                  <div className="text-gray-500 text-[10px] uppercase">Total Duration</div>
-                                  <div className="font-bold text-emerald-400">{visit.duration || 0} seconds</div>
-                                </div>
-                                <div>
-                                  <div className="text-gray-500 text-[10px] uppercase">Active Path</div>
-                                  <div className="font-bold text-blue-400 truncate" title={visit.path}>{visit.path || '/'}</div>
-                                </div>
-                              </div>
-                              <div className="pt-1">
-                                <div className="text-gray-500 text-[10px] uppercase">Referrer Source</div>
-                                <div className="text-gray-300 truncate font-mono" title={visit.referrer}>{cleanVal(visit.referrer, 'Direct / Internal')}</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Timing Telemetry Card */}
-                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
-                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span>Timing Telemetry</span>
-                            </div>
-                            <div className="space-y-2 text-[11px]">
-                              <div>
-                                <div className="text-gray-500 text-[10px] uppercase">Start Time</div>
-                                <div className="text-white font-mono">
-                                  {visit.startTime ? `${formatDateSafe(visit.startTime)} at ${formatTimeSafe(visit.startTime)}` : 'N/A'}
-                                </div>
-                              </div>
-                              <div className="pt-1.5 border-t border-white/5">
-                                <div className="text-gray-500 text-[10px] uppercase">Last Active (Heartbeat)</div>
-                                <div className="text-white font-mono">
-                                  {visit.endTime ? `${formatDateSafe(visit.endTime)} at ${formatTimeSafe(visit.endTime)}` : 'N/A'}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Geolocation & Network Card */}
-                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
-                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
-                              <Globe className="w-3.5 h-3.5" />
-                              <span>Geolocation & Network</span>
-                            </div>
-                            <div className="space-y-1.5 text-[11px]">
-                              <div>
-                                <div className="text-gray-500 text-[10px] uppercase">IP Address</div>
-                                <div className="text-blue-400 font-bold">{cleanVal(visit.ip, 'Localhost / Intranet')}</div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
-                                <div>
-                                  <div className="text-gray-500 text-[10px] uppercase">City / Region</div>
-                                  <div className="text-white">
-                                    {cleanVal(visit.city, 'N/A')}{visit.region ? `, ${visit.region}` : ''}
+                                <div className="space-y-1.5 text-[11px]">
+                                  <div>
+                                    <div className="text-gray-500 text-[10px] uppercase">Session ID</div>
+                                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                                      <span className="font-mono text-gray-900 dark:text-white break-all select-all">{visit.sessionId || 'N/A'}</span>
+                                      {visit.sessionId && (
+                                        <button
+                                          onClick={() => copyVal(`sess_${visit.id}`, visit.sessionId || '')}
+                                          className="p-1 hover:bg-gray-200 dark:hover:bg-white/10 rounded text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all shrink-0 cursor-pointer"
+                                          title="Copy Session ID"
+                                        >
+                                          {copiedKey === `sess_${visit.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                                <div>
-                                  <div className="text-gray-500 text-[10px] uppercase">Country</div>
-                                  <div className="text-white">
-                                    {cleanVal(visit.country, 'N/A')} {visit.countryCode ? `(${visit.countryCode})` : ''}
+                                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200 dark:border-white/5">
+                                    <div>
+                                      <div className="text-gray-500 text-[10px] uppercase">Total Duration</div>
+                                      <div className="font-bold text-emerald-600 dark:text-emerald-400">{visit.duration || 0} seconds</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-gray-500 text-[10px] uppercase">Active Path</div>
+                                      <div className="font-bold text-blue-600 dark:text-blue-400 truncate" title={visit.path}>{visit.path || '/'}</div>
+                                    </div>
+                                  </div>
+                                  <div className="pt-1">
+                                    <div className="text-gray-500 text-[10px] uppercase">Referrer Source</div>
+                                    <div className="text-gray-700 dark:text-gray-300 truncate font-mono" title={visit.referrer}>{cleanVal(visit.referrer, 'Direct / Internal')}</div>
                                   </div>
                                 </div>
                               </div>
-                              <div className="pt-1 border-t border-white/5">
-                                <div className="text-gray-500 text-[10px] uppercase">Network Provider (ISP)</div>
-                                <div className="text-gray-300 truncate" title={visit.isp}>{cleanVal(visit.isp, 'Internal / Cloudflare')}</div>
-                              </div>
-                            </div>
-                          </div>
 
-                          {/* Client Platform Card */}
-                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
-                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
-                              <Cpu className="w-3.5 h-3.5" />
-                              <span>Client Platform</span>
-                            </div>
-                            <div className="space-y-1.5 text-[11px]">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <div className="text-gray-500 text-[10px] uppercase">Device Type</div>
-                                  <div className="text-white">{cleanVal(visit.deviceType, 'Desktop')}</div>
+                              {/* Timing Telemetry Card */}
+                              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-black/50 border border-gray-200/80 dark:border-white/5 space-y-2">
+                                <div className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>Timing Telemetry</span>
                                 </div>
-                                <div>
-                                  <div className="text-gray-500 text-[10px] uppercase">Operating System</div>
-                                  <div className="text-white">{cleanVal(visit.os, 'N/A')}</div>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
-                                <div>
-                                  <div className="text-gray-500 text-[10px] uppercase">Browser</div>
-                                  <div className="text-white">{cleanVal(visit.browser, 'N/A')}</div>
-                                </div>
-                                <div>
-                                  <div className="text-gray-500 text-[10px] uppercase">Screen Frame</div>
-                                  <div className="text-white font-mono">{cleanVal(visit.screenResolution, 'N/A')}</div>
+                                <div className="space-y-2 text-[11px]">
+                                  <div>
+                                    <div className="text-gray-500 text-[10px] uppercase">Start Time</div>
+                                    <div className="text-gray-900 dark:text-white font-mono">
+                                      {visit.startTime ? `${formatDateSafe(visit.startTime)} at ${formatTimeSafe(visit.startTime)}` : 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div className="pt-1.5 border-t border-gray-200 dark:border-white/5">
+                                    <div className="text-gray-500 text-[10px] uppercase">Last Active (Heartbeat)</div>
+                                    <div className="text-gray-900 dark:text-white font-mono">
+                                      {visit.endTime ? `${formatDateSafe(visit.endTime)} at ${formatTimeSafe(visit.endTime)}` : 'N/A'}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="pt-1 border-t border-white/5">
-                                <div className="text-gray-500 text-[10px] uppercase">Language</div>
-                                <div className="text-white font-mono">{cleanVal(visit.language, 'N/A')}</div>
-                              </div>
-                            </div>
-                          </div>
 
-                          {/* Raw User Agent Header */}
-                          <div className="md:col-span-2 p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-1">
-                            <div className="text-gray-500 text-[10px] uppercase">Raw User Agent Header</div>
-                            <div className="text-[11px] font-mono text-gray-400 break-all leading-relaxed bg-black/90 p-2.5 rounded-lg border border-white/5 select-all">
-                              {visit.userAgent || 'N/A'}
+                              {/* Geolocation & Network Card */}
+                              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-black/50 border border-gray-200/80 dark:border-white/5 space-y-2">
+                                <div className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                                  <Globe className="w-3.5 h-3.5" />
+                                  <span>Geolocation & Network</span>
+                                </div>
+                                <div className="space-y-1.5 text-[11px]">
+                                  <div>
+                                    <div className="text-gray-500 text-[10px] uppercase">IP Address</div>
+                                    <div className="text-blue-600 dark:text-blue-400 font-bold">{cleanVal(visit.ip, 'Localhost / Intranet')}</div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-200 dark:border-white/5">
+                                    <div>
+                                      <div className="text-gray-500 text-[10px] uppercase">City / Region</div>
+                                      <div className="text-gray-900 dark:text-white">
+                                        {cleanVal(visit.city, 'N/A')}{visit.region ? `, ${visit.region}` : ''}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-gray-500 text-[10px] uppercase">Country</div>
+                                      <div className="text-gray-900 dark:text-white">
+                                        {cleanVal(visit.country, 'N/A')} {visit.countryCode ? `(${visit.countryCode})` : ''}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="pt-1 border-t border-gray-200 dark:border-white/5">
+                                    <div className="text-gray-500 text-[10px] uppercase">Network Provider (ISP)</div>
+                                    <div className="text-gray-700 dark:text-gray-300 truncate" title={visit.isp}>{cleanVal(visit.isp, 'Internal / Cloudflare')}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Client Platform Card */}
+                              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-black/50 border border-gray-200/80 dark:border-white/5 space-y-2">
+                                <div className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                                  <Cpu className="w-3.5 h-3.5" />
+                                  <span>Client Platform</span>
+                                </div>
+                                <div className="space-y-1.5 text-[11px]">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <div className="text-gray-500 text-[10px] uppercase">Device Type</div>
+                                      <div className="text-gray-900 dark:text-white">{cleanVal(visit.deviceType, 'Desktop')}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-gray-500 text-[10px] uppercase">Operating System</div>
+                                      <div className="text-gray-900 dark:text-white">{cleanVal(visit.os, 'N/A')}</div>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-200 dark:border-white/5">
+                                    <div>
+                                      <div className="text-gray-500 text-[10px] uppercase">Browser</div>
+                                      <div className="text-gray-900 dark:text-white">{cleanVal(visit.browser, 'N/A')}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-gray-500 text-[10px] uppercase">Screen Frame</div>
+                                      <div className="text-gray-900 dark:text-white font-mono">{cleanVal(visit.screenResolution, 'N/A')}</div>
+                                    </div>
+                                  </div>
+                                  <div className="pt-1 border-t border-gray-200 dark:border-white/5">
+                                    <div className="text-gray-500 text-[10px] uppercase">Language</div>
+                                    <div className="text-gray-900 dark:text-white font-mono">{cleanVal(visit.language, 'N/A')}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Raw User Agent Header */}
+                              <div className="md:col-span-2 p-3.5 rounded-xl bg-gray-50 dark:bg-black/50 border border-gray-200/80 dark:border-white/5 space-y-1">
+                                <div className="text-gray-500 text-[10px] uppercase">Raw User Agent Header</div>
+                                <div className="text-[11px] font-mono text-gray-700 dark:text-gray-400 break-all leading-relaxed bg-gray-100 dark:bg-black/90 p-2.5 rounded-lg border border-gray-200 dark:border-white/5 select-all">
+                                  {visit.userAgent || 'N/A'}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 );
               })}
@@ -693,6 +732,7 @@ function MessageEditor() {
 }
 
 function ProfileEditor() {
+  const showToast = useAdminToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -729,9 +769,10 @@ function ProfileEditor() {
         ...cleanProfile,
         specializations: []
       });
-      alert('Profile updated!');
+      showToast('Profile updated!', 'success');
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'profile/main');
+      showToast('Failed to update profile.', 'error');
     } finally {
       setSaving(false);
     }
@@ -901,6 +942,7 @@ function ProjectVideoUpload({
   onUpdateMedia: (updates: { videoUrl?: string; videoThumbnail?: string }) => void;
   projectId: string;
 }) {
+  const showToast = useAdminToast();
   const [uploading, setUploading] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [urlInput, setUrlInput] = useState(videoUrl || '');
@@ -944,8 +986,9 @@ function ProjectVideoUpload({
 
     // Check size limit: Netlify serverless functions enforce a 6MB payload limit
     if (file.size > 5.8 * 1024 * 1024) {
-      alert(
-        `Video file size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds Netlify's 6MB serverless upload limit.\n\nFor larger videos, please upload to YouTube or Vimeo, or host the MP4 externally, and paste the URL in the field below!`
+      showToast(
+        `Video file size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds 6MB limit. Host externally or on YouTube/Vimeo and paste the URL.`,
+        'error'
       );
       return;
     }
@@ -1003,7 +1046,7 @@ function ProjectVideoUpload({
       });
     } catch (err: any) {
       console.error('Video upload error:', err);
-      alert(err.message || 'Failed to upload video.');
+      showToast(err.message || 'Failed to upload video.', 'error');
     } finally {
       setUploading(false);
       setCapturing(false);
@@ -1063,7 +1106,7 @@ function ProjectVideoUpload({
       onUpdateMedia({ videoThumbnail: data.url });
     } catch (err) {
       console.error('Upload thumbnail error:', err);
-      alert('Failed to upload thumbnail.');
+      showToast('Failed to upload thumbnail.', 'error');
     }
   };
 
@@ -1211,8 +1254,8 @@ function ProjectVideoUpload({
       {activeVideo && (
         <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
           <div className="flex items-center justify-between">
-            <div className="text-[10px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <div className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
               <Eye className="w-3.5 h-3.5 text-blue-500" />
               <span>Active Video Stream</span>
             </div>
@@ -1573,6 +1616,7 @@ function BlogEditor() {
 }
 
 function AppSettingsEditor() {
+  const showToast = useAdminToast();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -1631,10 +1675,10 @@ function AppSettingsEditor() {
         console.warn('Could not contact backend for social preview compilation:', err);
       }
 
-      alert('Settings synchronized successfully.');
+      showToast('Settings synchronized successfully.', 'success');
     } catch (err: any) {
       console.error('Failed to sync settings:', err);
-      alert('Failed to sync settings: ' + err.message);
+      showToast('Failed to sync settings: ' + err.message, 'error');
     } finally {
       setSavingSettings(false);
     }
@@ -1644,7 +1688,7 @@ function AppSettingsEditor() {
     e.preventDefault();
     if (!auth.currentUser || !auth.currentUser.email) return;
     if (newPassword !== confirmPassword) {
-      alert('New passwords do not match');
+      showToast('New passwords do not match', 'error');
       return;
     }
     
@@ -1653,15 +1697,15 @@ function AppSettingsEditor() {
       const credential = EmailAuthProvider.credential(auth.currentUser.email, oldPassword);
       await reauthenticateWithCredential(auth.currentUser, credential);
       await updatePassword(auth.currentUser, newPassword);
-      alert('Master Key updated successfully.');
+      showToast('Master Key updated successfully.', 'success');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        alert('Security Verification Failed: The current password you entered is incorrect.');
+        showToast('Security Verification Failed: The current password you entered is incorrect.', 'error');
       } else {
-        alert('Security Verification Failed: ' + error.message);
+        showToast('Security Verification Failed: ' + error.message, 'error');
       }
     } finally {
       setPwLoading(false);
@@ -1743,7 +1787,7 @@ function AppSettingsEditor() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 p-5 sm:p-8 glass-sm rounded-3xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02]">
             <div className="space-y-6">
               <Input 
                 label="Preview Title (e.g. Abdulrahman Kamal | Portfolio)" 
@@ -1769,18 +1813,18 @@ function AppSettingsEditor() {
               
               {/* Educational Guide Card */}
               <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center">
-                  💡 Crawler and Link Preview Guide
+                <h4 className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center">
+                  Crawler and Link Preview Guide
                 </h4>
-                <ul className="text-[10.5px] text-gray-400 space-y-2 list-disc pl-4 leading-relaxed">
+                <ul className="text-[11px] text-gray-600 dark:text-gray-400 space-y-2 list-disc ps-4 leading-relaxed">
                   <li>
-                    <strong className="text-white">LinkedIn Caching:</strong> LinkedIn caches link previews aggressively. If you update your preview details but don't see the changes, visit the <a href="https://www.linkedin.com/post-inspector/" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">LinkedIn Post Inspector</a> to force LinkedIn's crawler to scrape your site immediately and clear the cache.
+                    <strong className="text-gray-900 dark:text-white">LinkedIn Caching:</strong> LinkedIn caches link previews aggressively. If you update your preview details but don't see the changes, visit the <a href="https://www.linkedin.com/post-inspector/" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">LinkedIn Post Inspector</a> to force LinkedIn's crawler to scrape your site immediately and clear the cache.
                   </li>
                   <li>
-                    <strong className="text-white">Image Formats:</strong> A 1.91:1 aspect ratio (recommended 1200x630 pixels, max 2MB) is standard to ensure beautiful, non-cropped display cards across all platforms.
+                    <strong className="text-gray-900 dark:text-white">Image Formats:</strong> A 1.91:1 aspect ratio (recommended 1200x630 pixels, max 2MB) is standard to ensure clean, non-cropped display cards across platforms.
                   </li>
                   <li>
-                    <strong className="text-white">LinkedIn URL Shortening:</strong> When posting, LinkedIn always wraps link URLs in their own shortened tracker links (<code className="text-blue-300">lnkd.in</code>). Anyone clicking it will be redirected directly to your website.
+                    <strong className="text-gray-900 dark:text-white">LinkedIn URL Shortening:</strong> When posting, LinkedIn always wraps link URLs in their own shortened tracker links (<code className="text-blue-600 dark:text-blue-300">lnkd.in</code>). Anyone clicking it will be redirected directly to your website.
                   </li>
                 </ul>
               </div>
@@ -1789,16 +1833,16 @@ function AppSettingsEditor() {
         </div>
 
         {/* Section Subtitles / Intros */}
-        <div className="pt-8 border-t border-white/5 space-y-6">
+        <div className="pt-8 border-t border-gray-200 dark:border-white/10 space-y-6">
           <div className="space-y-2">
             <h3 className="text-xl font-bold flex items-center">
-              <BookOpen className="mr-2 w-5 h-5 text-blue-500" /> Section Descriptions & Intros
+              <BookOpen className="me-2 w-5 h-5 text-blue-500" /> Section Descriptions & Intros
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Customize the introductory subtitles displayed at the top of each page/section of your website. Leave a field blank to use its default subtitle.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 sm:p-6 glass-sm rounded-3xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02]">
             <Input 
               label="Experience Section Intro" 
               value={settings.experienceSubtitle || ''} 
@@ -1835,10 +1879,10 @@ function AppSettingsEditor() {
         </div>
 
         {/* Dynamic Navigation Order Managers */}
-        <div className="pt-8 border-t border-white/5 space-y-8">
+        <div className="pt-8 border-t border-gray-200 dark:border-white/10 space-y-8">
           <div className="space-y-2">
             <h3 className="text-xl font-bold flex items-center">
-              <Settings className="mr-2 w-5 h-5 text-blue-500" /> Navigation Order Management
+              <Settings className="me-2 w-5 h-5 text-blue-500" /> Navigation Order Management
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Configure which pages are visible and the exact order they appear in both the Computer / Desktop navbar and the Mobile navigation bar.
@@ -1847,11 +1891,11 @@ function AppSettingsEditor() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Desktop Order Controller */}
-            <div className="space-y-4 p-6 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
-              <h4 className="text-sm font-black uppercase tracking-widest text-blue-500">
+            <div className="space-y-4 p-5 sm:p-6 glass-sm rounded-3xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02]">
+              <h4 className="text-sm font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
                 Computer / Desktop Navigation Bar Links
               </h4>
-              <p className="text-xs text-gray-400">Reorder the core menu links on the desktop view.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Reorder the core menu links on the desktop view.</p>
               
               <div className="space-y-2">
                 {(() => {
@@ -1879,17 +1923,17 @@ function AppSettingsEditor() {
                     const IconComp = meta.icon;
 
                     return (
-                      <div key={key} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                        <div className="flex items-center space-x-3">
-                          <IconComp className="w-4 h-4 text-blue-400" />
+                      <div key={key} className="flex items-center justify-between p-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl">
+                        <div className="flex items-center gap-3">
+                          <IconComp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                           <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{meta.label}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center gap-1">
                           <button
                             type="button"
                             disabled={i === 0}
                             onClick={() => handleMove(i, 'up')}
-                            className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-blue-400 font-bold disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-transform"
+                            className="p-1 px-2.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/25 text-xs text-blue-600 dark:text-blue-400 font-bold disabled:opacity-30 disabled:pointer-events-none transition-transform cursor-pointer"
                           >
                             ▲
                           </button>
@@ -1897,7 +1941,7 @@ function AppSettingsEditor() {
                             type="button"
                             disabled={i === order.length - 1}
                             onClick={() => handleMove(i, 'down')}
-                            className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-blue-400 font-bold disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-transform"
+                            className="p-1 px-2.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/25 text-xs text-blue-600 dark:text-blue-400 font-bold disabled:opacity-30 disabled:pointer-events-none transition-transform cursor-pointer"
                           >
                             ▼
                           </button>
@@ -1912,11 +1956,11 @@ function AppSettingsEditor() {
             {/* Mobile Navigation Controller */}
             <div className="space-y-6">
               {/* Primary Mobile Nav (Bottom Bar) */}
-              <div className="space-y-4 p-6 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
-                <h4 className="text-sm font-black uppercase tracking-widest text-emerald-500">
+              <div className="space-y-4 p-5 sm:p-6 glass-sm rounded-3xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02]">
+                <h4 className="text-sm font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
                   Mobile Bottom Bar Items (Primary)
                 </h4>
-                <p className="text-xs text-gray-400">Items displayed directly in the bottom navigation bar on mobile phones.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Items displayed directly in the bottom navigation bar on mobile phones.</p>
 
                 <div className="space-y-2">
                   {(() => {
@@ -1973,18 +2017,18 @@ function AppSettingsEditor() {
                           const IconComp = meta.icon;
 
                           return (
-                            <div key={key} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                              <div className="flex items-center space-x-3">
-                                <IconComp className="w-4 h-4 text-emerald-500" />
+                            <div key={key} className="flex items-center justify-between p-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl">
+                              <div className="flex items-center gap-3">
+                                <IconComp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                 <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{meta.label}</span>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex items-center space-x-1">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
                                   <button
                                     type="button"
                                     disabled={i === 0}
                                     onClick={() => handleMoveOrder(i, 'up')}
-                                    className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-emerald-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
+                                    className="p-1 px-2.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/25 text-xs text-emerald-600 dark:text-emerald-400 font-bold disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                                   >
                                     ▲
                                   </button>
@@ -1992,7 +2036,7 @@ function AppSettingsEditor() {
                                     type="button"
                                     disabled={i === primary.length - 1}
                                     onClick={() => handleMoveOrder(i, 'down')}
-                                    className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-emerald-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
+                                    className="p-1 px-2.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/25 text-xs text-emerald-600 dark:text-emerald-400 font-bold disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                                   >
                                     ▼
                                   </button>
@@ -2000,7 +2044,7 @@ function AppSettingsEditor() {
                                 <button
                                   type="button"
                                   onClick={() => moveItem(key, 'secondary')}
-                                  className="text-[10px] uppercase font-black tracking-wider text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded-lg transition-colors"
+                                  className="text-[10px] uppercase font-black tracking-wider text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded-lg transition-colors cursor-pointer"
                                 >
                                   Move To Drawer
                                 </button>
@@ -2018,11 +2062,11 @@ function AppSettingsEditor() {
               </div>
 
               {/* Secondary Mobile Nav (Drawer / More menu) */}
-              <div className="space-y-4 p-6 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
-                <h4 className="text-sm font-black uppercase tracking-widest text-rose-500">
+              <div className="space-y-4 p-5 sm:p-6 glass-sm rounded-3xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02]">
+                <h4 className="text-sm font-black uppercase tracking-widest text-rose-600 dark:text-rose-400">
                   Mobile "More..." Drawer Items (Secondary)
                 </h4>
-                <p className="text-xs text-gray-400">Items organized inside the slide-up "More" options list drawer on mobile screens.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Items organized inside the slide-up "More" options list drawer on mobile screens.</p>
 
                 <div className="space-y-2">
                   {(() => {
@@ -2079,18 +2123,18 @@ function AppSettingsEditor() {
                           const IconComp = meta.icon;
 
                           return (
-                            <div key={key} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                              <div className="flex items-center space-x-3">
+                            <div key={key} className="flex items-center justify-between p-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl">
+                              <div className="flex items-center gap-3">
                                 <IconComp className="w-4 h-4 text-rose-500" />
                                 <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{meta.label}</span>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex items-center space-x-1">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
                                   <button
                                     type="button"
                                     disabled={i === 0}
                                     onClick={() => handleMoveOrder(i, 'up')}
-                                    className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-rose-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
+                                    className="p-1 px-2.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/25 text-xs text-rose-600 dark:text-rose-400 font-bold disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                                   >
                                     ▲
                                   </button>
@@ -2098,7 +2142,7 @@ function AppSettingsEditor() {
                                     type="button"
                                     disabled={i === secondary.length - 1}
                                     onClick={() => handleMoveOrder(i, 'down')}
-                                    className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-rose-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
+                                    className="p-1 px-2.5 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/25 text-xs text-rose-600 dark:text-rose-400 font-bold disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                                   >
                                     ▼
                                   </button>
@@ -2106,7 +2150,7 @@ function AppSettingsEditor() {
                                 <button
                                   type="button"
                                   onClick={() => moveItem(key, 'primary')}
-                                  className="text-[10px] uppercase font-black tracking-wider text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded-lg transition-colors"
+                                  className="text-[10px] uppercase font-black tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded-lg transition-colors cursor-pointer"
                                 >
                                   Move To Bar
                                 </button>
@@ -2126,20 +2170,20 @@ function AppSettingsEditor() {
           </div>
         </div>
 
-        <button type="submit" disabled={savingSettings} className="btn-primary flex items-center">
+        <button type="submit" disabled={savingSettings} className="btn-primary flex items-center cursor-pointer">
           {savingSettings ? (
             <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Syncing...
+              <Loader2 className="w-5 h-5 me-2 animate-spin" /> Syncing...
             </>
           ) : (
             <>
-              <Save className="w-5 h-5 mr-2" /> Sync Configuration
+              <Save className="w-5 h-5 me-2" /> Sync Configuration
             </>
           )}
         </button>
       </form>
 
-      <div className="pt-12 border-t border-white/5">
+      <div className="pt-12 border-t border-gray-200 dark:border-white/10">
         <h3 className="text-xl font-bold flex items-center mb-6"><Lock className="mr-2 w-5 h-5 text-blue-500" /> Administrative Access Pivot</h3>
         <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
           <div className="space-y-1">
@@ -2186,6 +2230,7 @@ function AppSettingsEditor() {
 }
 
 function SkillEditor() {
+  const showToast = useAdminToast();
   const [items, setItems] = useState<Skill[]>([]);
   const [editing, setEditing] = useState<Skill | null>(null);
   const [seeding, setSeeding] = useState(false);
@@ -2258,10 +2303,11 @@ function SkillEditor() {
       for (const item of defaults) {
         await addDoc(collection(db, 'skills'), item);
       }
-      alert('Default services successfully imported into your database!');
+      showToast('Default services successfully imported into your database!', 'success');
     } catch (error) {
       console.error("Error seeding default services:", error);
       handleFirestoreError(error, OperationType.WRITE, 'skills');
+      showToast('Failed to import default services.', 'error');
     } finally {
       setSeeding(false);
     }
@@ -2300,8 +2346,8 @@ function SkillEditor() {
 
       {items.length === 0 && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 space-y-4">
-          <p className="text-sm text-gray-400">
-            💡 <strong className="text-white">Default Services Active:</strong> Your public profile is currently displaying default cybersecurity services. To customize, add, edit, or delete them, click below to import them into your database.
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            <strong className="text-gray-900 dark:text-white">Default Services Active:</strong> Your public profile is currently displaying default cybersecurity services. To customize, add, edit, or delete them, click below to import them into your database.
           </p>
           <button
             onClick={seedDefaults}
@@ -2357,22 +2403,22 @@ function SkillEditor() {
             />
 
             {/* Customizable Icon Selector */}
-            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+            <div className="space-y-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/10">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-blue-400">
+                <label className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                   Customizable Icon
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-gray-500 font-mono uppercase">Selected:</span>
-                  <div className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center p-1 border border-blue-500/30">
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center p-1 border border-blue-500/30">
                     {React.createElement(getServiceIcon(editing.icon), { className: "w-4 h-4" })}
                   </div>
-                  <span className="text-xs font-mono font-bold text-white">{editing.icon || 'Shield'}</span>
+                  <span className="text-xs font-mono font-bold text-gray-900 dark:text-white">{editing.icon || 'Shield'}</span>
                 </div>
               </div>
 
               {/* Grid of Selectable Icons */}
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-44 overflow-y-auto p-2 bg-black/40 rounded-xl border border-white/5 custom-scrollbar">
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-44 overflow-y-auto p-2 bg-gray-100 dark:bg-black/40 rounded-xl border border-gray-200 dark:border-white/5 custom-scrollbar">
                 {AVAILABLE_SERVICE_ICONS.map((ico) => {
                   const IconComp = ico.icon;
                   const isSelected = (editing.icon || 'Shield') === ico.id;
@@ -2428,6 +2474,7 @@ function SkillEditor() {
 }
 
 function SpecializationEditor() {
+  const showToast = useAdminToast();
   const [items, setItems] = useState<Specialization[]>([]);
   const [editing, setEditing] = useState<Specialization | null>(null);
   const [seeding, setSeeding] = useState(false);
@@ -2463,10 +2510,11 @@ function SpecializationEditor() {
       for (const item of defaults) {
         await addDoc(collection(db, 'specializations'), item);
       }
-      alert('Default specializations successfully imported into your database!');
+      showToast('Default specializations successfully imported into your database!', 'success');
     } catch (error) {
       console.error("Error seeding default specializations:", error);
       handleFirestoreError(error, OperationType.WRITE, 'specializations');
+      showToast('Failed to import default specializations.', 'error');
     } finally {
       setSeeding(false);
     }
@@ -2513,8 +2561,8 @@ function SpecializationEditor() {
 
       {items.length === 0 && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 space-y-4">
-          <p className="text-sm text-gray-400">
-            💡 <strong className="text-white">Default Specializations Active:</strong> Your public profile is currently displaying default placeholder specializations (<em>SOC Analysis, Digital Forensics, Linux Engineering</em>). To customize, edit, or delete them, click below to import them into your database.
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            <strong className="text-gray-900 dark:text-white">Default Specializations Active:</strong> Your public profile is currently displaying default placeholder specializations (<em>SOC Analysis, Digital Forensics, Linux Engineering</em>). To customize, edit, or delete them, click below to import them into your database.
           </p>
           <button
             onClick={seedDefaults}
@@ -2567,36 +2615,36 @@ function SpecializationEditor() {
 // Reusable Components
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub: string; color?: string }) {
   return (
-    <div className="glass-sm p-8 rounded-[2rem] border border-white/5 relative overflow-hidden group">
+    <div className="glass-sm p-6 sm:p-8 rounded-[2rem] border border-gray-200/80 dark:border-white/5 relative overflow-hidden group">
       <div className="absolute -right-4 -top-4 w-12 h-12 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all" />
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">{label}</p>
-      <p className={`text-4xl font-black tracking-tighter ${color || ''}`}>{value}</p>
-      <p className="text-[10px] font-mono text-gray-400 mt-2 uppercase">{sub}</p>
+      <p className={`text-3xl sm:text-4xl font-black tracking-tighter text-gray-900 dark:text-white ${color || ''}`}>{value}</p>
+      <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-2 uppercase">{sub}</p>
     </div>
   );
 }
 
 function ResourceCard({ name, status, items, usage, limit }: { name: string; status: string; items: { label: string; count: number }[]; usage: string; limit: string }) {
   return (
-    <div className="glass-sm p-6 rounded-[2.5rem] border border-white/5 space-y-6">
+    <div className="glass-sm p-6 rounded-[2rem] border border-gray-200/80 dark:border-white/5 space-y-6">
       <div className="flex justify-between items-center">
-        <h4 className="font-bold text-sm uppercase tracking-tight">{name}</h4>
-        <span className="flex items-center space-x-1 text-[10px] font-black uppercase text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
-           <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+        <h4 className="font-bold text-sm uppercase tracking-tight text-gray-900 dark:text-white">{name}</h4>
+        <span className="flex items-center space-x-1.5 text-[10px] font-black uppercase text-green-600 dark:text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
+           <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
            <span>{status}</span>
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {items.map(item => (
-          <div key={item.label} className="p-3 bg-white/5 rounded-2xl border border-white/5">
+          <div key={item.label} className="p-3 bg-gray-100/80 dark:bg-white/5 rounded-2xl border border-gray-200/70 dark:border-white/5">
              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{item.label}</p>
-             <p className="text-lg font-black">{item.count}</p>
+             <p className="text-base sm:text-lg font-black text-gray-900 dark:text-white truncate">{item.count}</p>
           </div>
         ))}
       </div>
-      <div className="pt-2 border-t border-white/5 space-y-1">
-         <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">{usage}</p>
-         <p className="text-[8px] font-mono text-gray-500 uppercase tracking-tighter opacity-60">Limit: {limit}</p>
+      <div className="pt-2 border-t border-gray-200/70 dark:border-white/5 space-y-1">
+         <p className="text-[10px] font-mono text-gray-600 dark:text-gray-400 uppercase tracking-widest">{usage}</p>
+         <p className="text-[9px] font-mono text-gray-500 uppercase tracking-tighter">Limit: {limit}</p>
       </div>
     </div>
   );
@@ -2616,6 +2664,7 @@ function Input({ label, value, onChange, textarea, type = "text", placeholder }:
 }
 
 function MultiImageUpload({ label, images, onChange, path, targetId }: { label: string; images: string[]; onChange: (urls: string[]) => void; path: string; targetId?: string }) {
+  const showToast = useAdminToast();
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2645,7 +2694,7 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
       onChange([...images, data.url]);
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload file.');
+      showToast('Failed to upload file.', 'error');
     } finally {
       setUploading(false);
     }
@@ -2657,17 +2706,17 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
 
   return (
     <div className="space-y-4">
-      <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">{label}</label>
+      <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</label>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {images.map((img, i) => {
           const isPdf = img.toLowerCase().includes('.pdf') || img.toLowerCase().split('?')[0].endsWith('.pdf');
           const isVid = isVideoMedia(img);
           return (
-            <div key={i} className="relative aspect-video rounded-xl overflow-hidden glass-sm border border-white/10 group flex items-center justify-center bg-black/40">
+            <div key={i} className="relative aspect-video rounded-xl overflow-hidden glass-sm border border-gray-200 dark:border-white/10 group flex items-center justify-center bg-gray-100 dark:bg-black/40">
               {isPdf ? (
                 <div className="flex flex-col items-center justify-center text-center p-4 w-full h-full bg-red-500/5 hover:bg-red-500/10 transition-colors">
-                  <FileText className="w-8 h-8 text-red-500 mb-2 animate-pulse" />
-                  <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate w-full px-2">PDF Document</span>
+                  <FileText className="w-8 h-8 text-red-500 mb-2" />
+                  <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider truncate w-full px-2">PDF Document</span>
                 </div>
               ) : isVid ? (
                 <div className="relative w-full h-full flex items-center justify-center bg-zinc-950">
@@ -2709,6 +2758,7 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
 }
 
 function FileUpload({ label, value, onChange, path, targetId, accept }: { label: string; value: string; onChange: (url: string) => void; path: string; targetId?: string; accept?: string }) {
+  const showToast = useAdminToast();
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2740,7 +2790,7 @@ function FileUpload({ label, value, onChange, path, targetId, accept }: { label:
       onChange(data.url);
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload file.');
+      showToast('Failed to upload file.', 'error');
     } finally {
       setUploading(false);
     }
@@ -2798,6 +2848,7 @@ function FileUpload({ label, value, onChange, path, targetId, accept }: { label:
 }
 
 function ImageUpload({ label, value, onChange, path, targetId }: { label: string; value: string; onChange: (url: string) => void; path: string; targetId?: string }) {
+  const showToast = useAdminToast();
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2826,7 +2877,7 @@ function ImageUpload({ label, value, onChange, path, targetId }: { label: string
       onChange(data.url);
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image to local server.');
+      showToast('Failed to upload image to server.', 'error');
     } finally {
       setUploading(false);
     }
@@ -2937,21 +2988,22 @@ const ListItem: React.FC<{
 function Modal({ title, children, onClose, onSave }: { title: string; children: React.ReactNode; onClose: () => void; onSave: (e: React.FormEvent) => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-xl" onClick={onClose} />
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-        animate={{ opacity: 1, scale: 1, y: 0 }} 
-        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 w-full max-w-2xl p-8 rounded-[2.5rem] relative z-10 max-h-[90vh] overflow-y-auto shadow-[0_40px_120px_rgba(37,99,235,0.1)]"
+        initial={{ opacity: 0, y: 12 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.2 }}
+        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 w-full max-w-2xl p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] relative z-10 max-h-[90vh] overflow-y-auto shadow-2xl"
       >
-        <div className="flex justify-between items-center mb-8">
-          <h3 className="text-2xl font-bold">{title}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"><X className="w-5 h-5 sm:w-6 sm:h-6" /></button>
         </div>
         <form onSubmit={onSave} className="space-y-6">
           {children}
           <div className="flex justify-end gap-4 pt-6">
-            <button key="cancel" type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-            <button key="save" type="submit" className="btn-primary">Save Changes</button>
+            <button key="cancel" type="button" onClick={onClose} className="btn-secondary cursor-pointer">Cancel</button>
+            <button key="save" type="submit" className="btn-primary cursor-pointer">Save Changes</button>
           </div>
         </form>
       </motion.div>
@@ -2960,6 +3012,7 @@ function Modal({ title, children, onClose, onSave }: { title: string; children: 
 }
 
 function ContactSectionEditor() {
+  const showToast = useAdminToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [saving, setSaving] = useState(false);
@@ -3022,9 +3075,9 @@ function ContactSectionEditor() {
         specializations: []
       });
 
-      alert('Contact section configuration saved successfully!');
+      showToast('Contact section configuration saved successfully!', 'success');
     } catch (error) {
-      alert('Error saving contact details: ' + error);
+      showToast('Error saving contact details: ' + error, 'error');
     } finally {
       setSaving(false);
     }
@@ -3033,7 +3086,7 @@ function ContactSectionEditor() {
   const handleAddMethod = () => {
     if (!profile) return;
     if (!newLabel.trim() || !newValue.trim()) {
-      alert('Please fill in both Label and Value for the contact method.');
+      showToast('Please fill in both Label and Value for the contact method.', 'error');
       return;
     }
 
@@ -3092,7 +3145,12 @@ function ContactSectionEditor() {
   };
 
   if (!profile || !settings) {
-    return <div className="text-center p-8 font-mono text-xs text-blue-500 animate-pulse">Loading Contact Configuration...</div>;
+    return (
+      <div className="space-y-4 p-4">
+        <div className="h-8 w-56 bg-gray-200 dark:bg-white/10 rounded-xl animate-pulse" />
+        <div className="h-32 w-full bg-gray-100 dark:bg-white/5 rounded-2xl animate-pulse" />
+      </div>
+    );
   }
 
   const currentMethods = profile.contactMethods || [];
