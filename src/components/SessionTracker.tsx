@@ -60,9 +60,7 @@ export default function SessionTracker() {
 
         let ipData = {};
         try {
-          const ipRes = await fetch('https://ipapi.co/json/', {
-            signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined,
-          });
+          const ipRes = await fetch('https://ipapi.co/json/');
           if (ipRes.ok) {
             const json = await ipRes.json();
             ipData = {
@@ -74,8 +72,8 @@ export default function SessionTracker() {
               isp: json.org || 'Unknown'
             };
           }
-        } catch {
-          // Silently skip geolocation if blocked or timed out
+        } catch (err) {
+          console.error('Failed to fetch IP details:', err);
         }
 
         const visitData = {
@@ -100,9 +98,7 @@ export default function SessionTracker() {
       }
     };
 
-    const deferTimer = setTimeout(() => {
-      initVisit();
-    }, 1500);
+    initVisit();
 
     const heartbeat = setInterval(async () => {
       if (docRef.current) {
@@ -112,18 +108,15 @@ export default function SessionTracker() {
           await updateDoc(doc(db, 'visits', docRef.current), {
             endTime: new Date().toISOString(),
             duration: duration,
-            path: location.pathname
+            path: location.pathname // Track where they are currently
           });
         } catch (err) {
           console.error('Heartbeat update failed:', err);
         }
       }
-    }, 10000);
+    }, 10000); // Every 10 seconds
 
-    return () => {
-      clearTimeout(deferTimer);
-      clearInterval(heartbeat);
-    };
+    return () => clearInterval(heartbeat);
   }, []);
 
   // Update path when it changes

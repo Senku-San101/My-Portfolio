@@ -1,0 +1,48 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/api/upload"
+  to = "/.netlify/functions/upload"
+  status = 200
+
+[[redirects]]
+  from = "/api/blobs/*"
+  to = "/.netlify/functions/serve-blobs"
+  status = 200
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
+
+[[redirects]]
+  from = "/api/settings/social-preview"
+  to = "/.netlify/functions/social-preview"
+  status = 200
+
+[[redirects]]
+  from = "/api/projects/all-detected-videos"
+  to = "/.netlify/functions/all-detected-videos"
+  status = 200
+
+[[redirects]]
+  from = "/api/ops/analyze-headers"
+  to = "/.netlify/functions/analyze-headers"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/client-info"
+  to = "/.netlify/functions/client-info"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

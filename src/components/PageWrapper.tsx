@@ -6,15 +6,49 @@ interface PageWrapperProps {
   className?: string;
 }
 
-export default function PageWrapper({ children, className = '' }: PageWrapperProps) {
+export default function PageWrapper({ children, className = "" }: PageWrapperProps) {
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const item = {
+    hidden: { 
+      opacity: 0, 
+      y: 10,
+    },
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      transition: {
+        type: "spring" as const,
+        stiffness: 120,
+        damping: 20,
+      }
+    },
+  };
+
+  // Convert children to array and wrap them to stagger
+  const childrenArray = Array.isArray(children) ? children : [children];
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14, scale: 0.992 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+      variants={container}
+      initial="hidden"
+      animate="show"
       className={className}
     >
-      {children}
+      {childrenArray.map((child, index) => (
+        <motion.div key={index} variants={item}>
+          {child}
+        </motion.div>
+      ))}
     </motion.div>
   );
 }

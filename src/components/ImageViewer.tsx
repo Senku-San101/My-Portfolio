@@ -123,13 +123,13 @@ export default function ImageViewer({ images, label, triggerText, children, init
               }}
               tabIndex={0}
             >
-              {/* Close Button on top corner */}
+              {/* Close Button on top right */}
               <button 
                 onClick={() => setIsOpen(false)}
-                className="fixed top-4 end-4 sm:top-6 sm:end-6 p-2.5 sm:p-3 bg-white/15 hover:bg-white/25 rounded-full transition-colors z-[110] cursor-pointer"
+                className="absolute top-8 right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[110]"
                 title="Close Viewer"
               >
-                <X className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <X className="w-8 h-8 text-white" />
               </button>
 
               {/* Main Interactive Zoom Panel Card */}
@@ -138,40 +138,45 @@ export default function ImageViewer({ images, label, triggerText, children, init
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100vh', opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-                className="w-full max-w-5xl h-[90vh] bg-white dark:bg-[#0c0c0e] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl relative flex flex-col border border-gray-200 dark:border-white/10"
+                className="w-full max-w-5xl h-[90vh] bg-white dark:bg-[#0c0c0e] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col border border-gray-200 dark:border-white/10"
               >
                 {/* Card Header */}
-                <div className="flex justify-between items-center px-5 sm:px-8 py-4 border-b border-gray-200 dark:border-white/10 bg-gray-50/80 dark:bg-white/[0.02]">
+                <div className="flex justify-between items-center px-8 py-4 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02]">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 dark:text-blue-400 mb-0.5">{label}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500 mb-0.5">{label}</p>
                     <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase flex items-center gap-2">
-                      <span>{isPdf ? 'Document' : isVideo ? 'Video' : 'Image'} {currentIndex + 1} / {images.length}</span>
+                      <span>{isPdf ? 'Document' : isVideo ? 'Video' : 'Image'} {currentIndex + 1} of {images.length}</span>
+                      {isVideo && (
+                        <span className="text-[9px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                          Video Stream
+                        </span>
+                      )}
                     </h4>
                   </div>
 
                   {/* Zoom Controls (only for images) */}
                   {!isPdf && !isVideo && (
-                    <div className="flex items-center bg-gray-100 dark:bg-white/5 rounded-xl p-1 border border-gray-200 dark:border-white/10 gap-1">
+                    <div className="flex items-center bg-gray-100 dark:bg-white/5 rounded-full p-1 border border-gray-200 dark:border-white/10 space-x-1">
                       <button 
                         onClick={zoomOut}
-                        className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-colors text-gray-700 dark:text-white cursor-pointer"
+                        className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors text-gray-700 dark:text-white"
                         title="Zoom Out"
                       >
                         <ZoomOut className="w-4 h-4" />
                       </button>
-                      <span className="text-[10px] text-gray-600 dark:text-white/70 font-mono px-2 min-w-[46px] text-center">
+                      <span className="text-[10px] text-gray-600 dark:text-white/70 font-mono px-2 min-w-[50px] text-center">
                         {Math.round(zoomScale * 100)}%
                       </span>
                       <button 
                         onClick={zoomIn}
-                        className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-colors text-gray-700 dark:text-white cursor-pointer"
+                        className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors text-gray-700 dark:text-white"
                         title="Zoom In"
                       >
                         <ZoomIn className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={resetZoom}
-                        className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-colors text-gray-700 dark:text-white cursor-pointer"
+                        className="p-1.5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors text-gray-700 dark:text-white"
                         title="Reset Zoom"
                       >
                         <RotateCcw className="w-4 h-4" />
@@ -220,7 +225,7 @@ export default function ImageViewer({ images, label, triggerText, children, init
                 <div className="flex-1 flex items-center justify-center overflow-auto p-4 md:p-8 bg-gray-50 dark:bg-black/40 relative">
                   {/* Desktop controls overlay for PDF */}
                   {isPdf && !isMobile && (
-                    <div className="absolute top-4 start-4 flex gap-2 z-10">
+                    <div className="absolute top-4 left-4 flex gap-2 z-10">
                       <a 
                         href={images[currentIndex]}
                         target="_blank"
@@ -243,20 +248,26 @@ export default function ImageViewer({ images, label, triggerText, children, init
                     </div>
                   )}
 
+                  {isPdf && !isMobile && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/80 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/10 pointer-events-none">
+                      Document Viewer
+                    </div>
+                  )}
+
                   {isPdf ? (
                     <iframe
                       src={isMobile 
                         ? `https://docs.google.com/gview?url=${encodeURIComponent(images[currentIndex].startsWith('http') ? images[currentIndex] : `${window.location.origin}${images[currentIndex]}`)}&embedded=true`
                         : `${images[currentIndex]}#toolbar=0`
                       }
-                      className="w-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-xl bg-white dark:bg-zinc-900 border-none"
+                      className="w-full h-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-xl bg-white dark:bg-zinc-900 border-none"
                       title={`${label} PDF - ${currentIndex + 1}`}
                     />
                   ) : isVideo ? (
                     videoInfo?.type === 'youtube' && videoInfo.embedUrl ? (
                       <iframe
                         src={`${videoInfo.embedUrl}?autoplay=1&rel=0`}
-                        className="w-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-2xl bg-black border border-white/10"
+                        className="w-full h-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-2xl bg-black border border-white/10"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                         title={`${label} Video - ${currentIndex + 1}`}
@@ -264,7 +275,7 @@ export default function ImageViewer({ images, label, triggerText, children, init
                     ) : videoInfo?.type === 'vimeo' && videoInfo.embedUrl ? (
                       <iframe
                         src={`${videoInfo.embedUrl}?autoplay=1`}
-                        className="w-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-2xl bg-black border border-white/10"
+                        className="w-full h-full max-w-[95%] h-[65vh] md:h-[75vh] rounded-2xl shadow-2xl bg-black border border-white/10"
                         allow="autoplay; fullscreen; picture-in-picture"
                         allowFullScreen
                         title={`${label} Video - ${currentIndex + 1}`}
@@ -303,20 +314,20 @@ export default function ImageViewer({ images, label, triggerText, children, init
                     <>
                       <button 
                         onClick={prev}
-                        className="absolute start-3 sm:start-6 top-1/2 -translate-y-1/2 p-3 sm:p-4 bg-white/85 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 rounded-full transition-all border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white z-50 shadow-md cursor-pointer"
+                        className="absolute left-6 top-1/2 -translate-y-1/2 p-4 bg-white/80 dark:bg-black/60 hover:bg-white dark:hover:bg-black/80 rounded-full transition-all border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white z-50 shadow-md"
                         title="Previous item"
                       >
-                        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 rtl:rotate-180" />
+                        <ChevronLeft className="w-6 h-6" />
                       </button>
                       <button 
                         onClick={next}
-                        className="absolute end-3 sm:end-6 top-1/2 -translate-y-1/2 p-3 sm:p-4 bg-white/85 dark:bg-black/70 hover:bg-white dark:hover:bg-black/90 rounded-full transition-all border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white z-50 shadow-md cursor-pointer"
+                        className="absolute right-6 top-1/2 -translate-y-1/2 p-4 bg-white/80 dark:bg-black/60 hover:bg-white dark:hover:bg-black/80 rounded-full transition-all border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white z-50 shadow-md"
                         title="Next item"
                       >
-                        <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 rtl:rotate-180" />
+                        <ChevronRight className="w-6 h-6" />
                       </button>
 
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-950/80 backdrop-blur-md py-2 px-4 rounded-full z-50">
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center space-x-2 bg-gray-950/80 backdrop-blur-md py-2 px-4 rounded-full z-50">
                         {images.map((img, i) => {
                           const isV = isVideoMedia(img);
                           return (

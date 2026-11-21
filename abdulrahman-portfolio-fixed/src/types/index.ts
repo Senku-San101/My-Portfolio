@@ -1,0 +1,234 @@
+export interface ContactMethod {
+  id: string;
+  type: 'email' | 'phone' | 'whatsapp' | 'linkedin' | 'x' | 'github' | 'medium' | 'telegram' | 'website' | 'other';
+  label: string;
+  value: string;
+  order: number;
+}
+
+export interface Profile {
+  name: string;
+  title: string;
+  bio: string;
+  cvUrl?: string;
+  specializations?: string[];
+  location: string;
+  email: string;
+  phone: string;
+  linkedin: string;
+  github: string;
+  photoUrl: string;
+  contactMethods?: ContactMethod[];
+}
+
+export interface Experience {
+  id?: string;
+  company: string;
+  position: string;
+  location: string;
+  period: string;
+  description: string;
+  bullets: string[];
+  imageUrl?: string;
+  images?: string[];
+  link?: { url: string; text: string };
+  order: number;
+}
+
+export interface Certificate {
+  id?: string;
+  name: string;
+  issuer: string;
+  date: string;
+  credentialId?: string;
+  imageUrl?: string;
+  images?: string[];
+  link?: { url: string; text: string };
+  order: number;
+  worth?: number;
+  inProgress?: boolean;
+  description?: string;
+}
+
+export interface Project {
+  id?: string;
+  title: string;
+  description: string;
+  technologies: string[];
+  imageUrl?: string;
+  images?: string[];
+  videoUrl?: string;
+  videoThumbnail?: string;
+  link?: { url: string; text: string };
+  githubLink?: string;
+  order: number;
+  inProgress?: boolean;
+}
+
+export interface Specialization {
+  id?: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  order: number;
+}
+
+export interface Skill {
+  id?: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  iconUrl?: string;
+  category?: string;
+  level?: string;
+  order: number;
+}
+
+export interface Message {
+  id?: string;
+  name: string;
+  email: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface Visit {
+  id?: string;
+  sessionId: string;
+  userAgent: string;
+  language: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  path: string;
+  ip?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  countryCode?: string;
+  isp?: string;
+  deviceType?: string;
+  browser?: string;
+  os?: string;
+  screenResolution?: string;
+  referrer?: string;
+}
+
+export interface Blog {
+  id?: string;
+  title: string;
+  content: string;
+  description?: string;
+  date: string;
+  imageUrl?: string;
+  tags?: string[];
+  status: 'draft' | 'published';
+  externalUrl?: string;
+}
+
+export interface AppSettings {
+  chatBotInstructions?: string;
+  geminiApiKey?: string;
+  specializations?: string[];
+  siteName?: string;
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
+  desktopNavOrder?: string[];
+  mobilePrimaryNav?: string[];
+  mobileSecondaryNav?: string[];
+  experienceSubtitle?: string;
+  projectsSubtitle?: string;
+  certificatesSubtitle?: string;
+  skillsSubtitle?: string;
+  blogsSubtitle?: string;
+  contactSubtitleEn?: string;
+  contactSubtitleAr?: string;
+  socialTitle?: string;
+  socialDescription?: string;
+  socialImage?: string;
+  showVideoThumbnailAsProjectImage?: boolean;
+}
+
+export type VaultCategory = 
+  | 'linux' | 'soc' | 'reversing' | 'network' | 'web' | 'cloud' | 'general'
+  | 'linux-hardening' | 'soc-wazuh' | 'gdb-reversing' | 'network-recon' | 'web-api-sec' | 'crypto-forensics' | 'cloud-security';
+
+export interface VaultItem {
+  id?: string;
+  title: string;
+  category: VaultCategory;
+  command: string;
+  description?: string;
+  explanation?: string;
+  dangerLevel?: 'low' | 'medium' | 'critical';
+  tags: string[];
+  isPublic?: boolean;
+  order?: number;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface HeaderAuditItem {
+  header: string;
+  present: boolean;
+  configured?: boolean;
+  value?: string;
+  status: 'good' | 'warning' | 'critical' | 'info';
+  severity?: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+  recommendation?: string;
+  exampleValue?: string;
+}
+
+export interface HeaderAuditResult {
+  url: string;
+  targetUrl?: string;
+  timestamp: string;
+  score: number; // 0 to 100
+  grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+  statusDescription?: string;
+  statusCode?: number;
+  responseTimeMs?: number;
+  headers: Record<string, string>;
+  analysis: HeaderAuditItem[];
+  items: HeaderAuditItem[];
+  configuredHeaders: string[];
+  missingHeaders: string[];
+  serverLeaks: {
+    server?: string;
+    poweredBy?: string;
+    detected: boolean;
+  };
+  infoLeakage: {
+    server?: string;
+    poweredBy?: string;
+    hasLeak: boolean;
+  };
+  recommendedSnippets: {
+    nginx: string;
+    apache: string;
+    caddy: string;
+  };
+}
+
+export interface LoginLog {
+  id?: string;
+  email: string;
+  userId?: string;
+  timestamp: any;
+  isoDate?: string;
+  ip?: string;
+  city?: string;
+  country?: string;
+  countryCode?: string;
+  region?: string;
+  isp?: string;
+  userAgent?: string;
+  browser?: string;
+  os?: string;
+  device?: string;
+  screenResolution?: string;
+  status: 'success';
+  authMethod: string;
+  fingerprint?: string;
+}

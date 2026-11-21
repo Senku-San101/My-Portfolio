@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { Skill, AppSettings } from '../types';
-import PageWrapper from '../components/PageWrapper';
+import Typewriter from '../components/Typewriter';
 import ScrambleHeader from '../components/ScrambleHeader';
+import PageWrapper from '../components/PageWrapper';
 import { useLanguage } from '../context/LanguageContext';
 import { getServiceIcon } from '../lib/iconMap';
 
@@ -52,6 +53,7 @@ export default function SkillsPage() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
 
@@ -62,8 +64,10 @@ export default function SkillsPage() {
     const unsubSkills = onSnapshot(q, (snapshot) => {
       setSkills(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Skill)));
       setLoading(false);
+      setError(null);
     }, (err) => {
       console.error(err);
+      setError("Failed to initialize technical inventory.");
       setLoading(false);
       handleFirestoreError(err, OperationType.LIST, 'skills');
     });
@@ -73,7 +77,7 @@ export default function SkillsPage() {
         setSettings(snapshot.data() as AppSettings);
       }
     }, (err) => {
-      console.warn('Settings fetch failed, using fallbacks', err);
+      console.warn("Settings fetch failed, using fallbacks", err);
     });
 
     return () => {
@@ -82,6 +86,7 @@ export default function SkillsPage() {
     };
   }, []);
 
+  // Use Firestore services, or fallback to rich defaults if none exist in the database
   const displayServices = skills.length > 0 ? skills : (DEFAULT_SERVICES as Skill[]);
 
   const getServiceAnchor = (s: Skill | Partial<Skill>, idx: number) => {
@@ -95,16 +100,17 @@ export default function SkillsPage() {
     return `svc-${s.id || idx}`;
   };
 
+  // Scroll to targeted service if ?service=... is present
   useEffect(() => {
     if (!loading) {
       const targetParam = searchParams.get('service') || searchParams.get('skill');
       if (targetParam) {
         const q = targetParam.toLowerCase().trim();
         setTimeout(() => {
-          let el = document.getElementById(`svc-${q}`) ||
+          let el = document.getElementById(`svc-${q}`) || 
                    document.querySelector(`[data-svc-alias="${q}"]`) ||
                    document.querySelector(`[data-svc-name*="${q}"]`);
-
+          
           if (!el) {
             if (q.includes('penetration') || q.includes('red')) el = document.getElementById('svc-penetration-testing');
             else if (q.includes('soc') || q.includes('siem')) el = document.getElementById('svc-soc');
@@ -119,98 +125,98 @@ export default function SkillsPage() {
             el.classList.add('cyber-teleport-glow');
             setTimeout(() => el.classList.remove('cyber-teleport-glow'), 3500);
           }
-        }, 200);
+        }, 300);
       }
     }
   }, [loading, displayServices, searchParams]);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32 font-mono text-blue-500 tracking-widest text-xs uppercase">
+        <Typewriter text={t('syncingArsenal')} speed={20} />
+      </div>
+    );
+  }
+
   return (
-    <PageWrapper className="space-y-12 py-6 sm:py-10">
+    <PageWrapper className="space-y-16 py-12">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight uppercase text-gray-900 dark:text-white">
-          <ScrambleHeader text={t('skills')} as="span" />
+        <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic">
+          <ScrambleHeader text={t('skills')} />
         </h1>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.34 }}
-          className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto font-medium text-sm md:text-base"
-        >
-          {settings?.skillsSubtitle || (language === 'ar'
-            ? 'تفصيل شامل للخدمات الفنية والقدرات الأمنية المتقدمة.'
-            : 'A comprehensive breakdown of specialized cybersecurity services, technical capabilities, and engineering solutions.')}
-        </motion.p>
+        <div className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto font-medium text-sm md:text-base">
+          <Typewriter 
+            key={settings?.skillsSubtitle || "default"} 
+            text={settings?.skillsSubtitle || (language === 'ar' ? "تفصيل شامل للخدمات الفنية والقدرات الأمنية المتقدمة." : "A comprehensive breakdown of specialized cybersecurity services, technical capabilities, and engineering solutions.")} 
+            delay={800} 
+          />
+        </div>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {[0, 1, 2, 3, 4, 5].map((idx) => (
-            <div key={idx} className="glass-md p-7 sm:p-8 rounded-3xl animate-pulse space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-gray-200 dark:bg-white/10" />
-              <div className="h-6 w-3/4 bg-gray-200 dark:bg-white/10 rounded" />
-              <div className="h-4 w-full bg-gray-200 dark:bg-white/10 rounded" />
-              <div className="h-4 w-5/6 bg-gray-200 dark:bg-white/10 rounded" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {displayServices.map((service, i) => {
-            const Icon = getServiceIcon(service.icon);
-            const anchorId = getServiceAnchor(service, i);
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {displayServices.map((service, i) => {
+          const Icon = getServiceIcon(service.icon);
+          const anchorId = getServiceAnchor(service, i);
 
-            return (
-              <motion.div
-                key={service.id || i}
-                id={anchorId}
-                data-svc-alias={anchorId}
-                data-svc-name={(service.name || '').toLowerCase()}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.12 }}
-                transition={{ delay: (i % 3) * 0.05, duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
-                whileHover={{ y: -5 }}
-                className="glass-md p-7 sm:p-8 md:p-9 rounded-3xl border border-gray-200 dark:border-white/10 shadow-sm group hover:shadow-xl hover:border-blue-500/40 transition-colors duration-300 flex flex-col justify-between relative overflow-hidden"
-              >
-                <div className="space-y-6 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center p-3 group-hover:scale-110 transition-transform duration-300">
-                      {service.iconUrl ? (
-                        <img
-                          src={service.iconUrl}
-                          alt={service.name}
-                          loading="lazy"
-                          className="w-full h-full object-contain"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <Icon className="w-7 h-7" />
-                      )}
-                    </div>
+          return (
+            <motion.div
+              key={service.id || i}
+              id={anchorId}
+              data-svc-alias={anchorId}
+              data-svc-name={(service.name || '').toLowerCase()}
+              initial={{ opacity: 0, y: 25 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: Math.min(i * 0.08, 0.4), duration: 0.5 }}
+              whileHover={{ y: -8, borderColor: 'rgba(59, 130, 246, 0.45)' }}
+              className="glass-md p-8 md:p-10 rounded-[2.5rem] border border-white/10 shadow-2xl group transition-all duration-500 flex flex-col justify-between relative overflow-hidden bg-white/[0.02]"
+            >
+              {/* Top ambient glow on hover */}
+              <div className="absolute -top-16 -right-16 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500 pointer-events-none" />
 
-                    <span className="text-xs font-mono font-bold tracking-widest text-blue-600/70 dark:text-blue-400/70 tabular-nums">
-                      {String((service.order ?? i) + 1).padStart(2, '0')}
-                    </span>
+              <div className="space-y-6 relative z-10">
+                {/* Header: Icon & Service Code */}
+                <div className="flex items-center justify-between">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center p-3.5 shadow-[0_0_20px_rgba(59,130,246,0.15)] group-hover:scale-110 group-hover:bg-blue-500/20 group-hover:shadow-[0_0_25px_rgba(59,130,246,0.3)] transition-all duration-300">
+                    {service.iconUrl ? (
+                      <img 
+                        src={service.iconUrl} 
+                        alt={service.name} 
+                        className="w-full h-full object-contain" 
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <Icon className="w-8 h-8" />
+                    )}
                   </div>
 
-                  <div className="space-y-3">
-                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
-                      {service.name}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                      {service.description || (service.category ? `Specialized service in ${service.category}.` : '')}
-                    </p>
-                  </div>
+                  <span className="text-[10px] font-mono font-black tracking-widest text-blue-500/60 uppercase px-3 py-1 rounded-full bg-blue-500/5 border border-blue-500/10">
+                    SVC_{String((service.order ?? i) + 1).padStart(2, '0')}
+                  </span>
                 </div>
 
-                <div className="pt-5 mt-6 border-t border-gray-200/70 dark:border-white/10">
-                  <div className="w-10 h-1 bg-blue-500/35 group-hover:w-16 transition-all duration-300 rounded-full" />
+                {/* Name & Description */}
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight">
+                    {service.name}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed font-normal">
+                    {service.description || (service.category ? `Specialized service in ${service.category}.` : '')}
+                  </p>
                 </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+              </div>
+
+              {/* Bottom Card Footer */}
+              <div className="pt-6 mt-8 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-xs font-mono relative z-10">
+                <div className="w-10 h-1 bg-blue-500/30 group-hover:w-20 transition-all duration-500 rounded-full" />
+                <span className="text-blue-500 dark:text-blue-400 font-bold text-[10px] uppercase tracking-wider opacity-70 group-hover:opacity-100 transition-opacity">
+                  {language === 'ar' ? 'خدمة معتمدة' : 'Verified Capability'}
+                </span>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
     </PageWrapper>
   );
 }
