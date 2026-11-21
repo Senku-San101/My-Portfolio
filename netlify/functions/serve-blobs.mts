@@ -36,6 +36,7 @@ export default async (req: Request) => {
     else if (ext === 'mkv') contentType = 'video/x-matroska';
     else if (ext === 'png') contentType = 'image/png';
     else if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg';
+    else if (ext === 'webp') contentType = 'image/webp';
     else if (ext === 'pdf') contentType = 'application/pdf';
     else if (ext === 'svg') contentType = 'image/svg+xml';
     else {

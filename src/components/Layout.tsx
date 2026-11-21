@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, ReactNode, useRef } from 'react';
-import { Shield, Briefcase, Award, FolderCode, User, Cog, LogOut, Sun, Moon, Languages, BookOpen, FileText, Menu, X, Mail, Terminal } from 'lucide-react';
+import { Shield, Briefcase, Award, FolderCode, User, Cog, LogOut, Sun, Moon, BookOpen, FileText, Menu, Mail } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -41,11 +41,8 @@ export default function Layout({ children }: LayoutProps) {
   const [profile, setProfile] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
   
-  // Sidebar Expand State
-  const [isSidebarLocked, setIsSidebarLocked] = useState(false);
-  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isNavExpanded, setIsNavExpanded] = useState(window.innerWidth < 1024);
+  // Floating Dock Expand State (collapsed cleanly by default on initial load)
+  const [isNavExpanded, setIsNavExpanded] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -124,29 +121,14 @@ export default function Layout({ children }: LayoutProps) {
     })
     .filter(Boolean);
 
-  // Sidebar is expanded if locked (by button), hovered (on desktop), or opened on mobile
-  const isSidebarExpanded = isSidebarLocked || (isDesktop && isSidebarHovered) || mobileMenuOpen;
-
-  const handleMouseEnter = () => {
-    if (isDesktop) {
-      setIsSidebarHovered(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (isDesktop) {
-      setIsSidebarHovered(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#FBFBFD] dark:bg-black text-[#1D1D1F] dark:text-[#F5F5F7] selection:bg-blue-500/30 overflow-x-hidden flex flex-col">
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-black text-[#1D1D1F] dark:text-[#F5F5F7] selection:bg-blue-500/30 overflow-x-clip flex flex-col">
       {/* Background Gradients and Grid */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div 
-          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
+          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.07] pointer-events-none"
           style={{
-            backgroundImage: `linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(rgba(128,128,128,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(128,128,128,0.4) 1px, transparent 1px)`,
             backgroundSize: '32px 32px'
           }}
         />
@@ -234,18 +216,18 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       {/* ========================================================= */}
-      {/* FLOATING CENTERED DOCK (Aligned on the Right Side) */}
+      {/* FLOATING CENTERED DOCK (Aligned on End Side for LTR/RTL) */}
       {/* ========================================================= */}
       <motion.nav 
         ref={navRef}
-        initial={{ x: 50, opacity: 0 }}
+        initial={{ x: language === 'ar' ? -40 : 40, opacity: 0 }}
         animate={{ 
           x: 0, 
           opacity: 1,
           width: isNavExpanded ? (isDesktop ? 180 : 150) : (isDesktop ? 56 : 48)
         }}
         transition={{ type: 'spring', damping: 28, stiffness: 400 }}
-        className={`fixed right-3 md:right-6 top-1/2 -translate-y-1/2 z-50 flex lg:hidden flex-col items-center p-1.5 md:p-2 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border border-gray-200/50 dark:border-zinc-800/40 ${
+        className={`fixed end-2.5 sm:end-4 md:end-6 top-1/2 -translate-y-1/2 z-50 flex lg:hidden flex-col items-center p-1.5 md:p-2 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border border-gray-200/70 dark:border-zinc-800/50 max-h-[82dvh] overflow-y-auto no-scrollbar ${
           isNavExpanded ? 'rounded-[2rem]' : 'rounded-full'
         } shadow-lg dark:shadow-none space-y-2 md:space-y-2.5 select-none transition-all duration-300`}
         id="unified-sidebar-nav"
@@ -253,7 +235,7 @@ export default function Layout({ children }: LayoutProps) {
         {/* Three lines menu toggle button */}
         <button
           onClick={() => setIsNavExpanded(!isNavExpanded)}
-          className={`p-2 md:p-2.5 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
+          className={`p-2 md:p-2.5 rounded-full border transition-all cursor-pointer flex items-center justify-center flex-shrink-0 ${
             isNavExpanded 
               ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' 
               : 'text-gray-400 hover:text-gray-900 dark:hover:text-white border-transparent hover:bg-gray-100 dark:hover:bg-white/5'
@@ -263,7 +245,7 @@ export default function Layout({ children }: LayoutProps) {
           <Menu className="w-4 h-4 md:w-4.5 md:h-4.5" />
         </button>
 
-        <div className="w-full h-px bg-gray-100 dark:bg-zinc-800/40 my-0.5 md:my-1" />
+        <div className="w-full h-px bg-gray-100 dark:bg-zinc-800/40 my-0.5 md:my-1 flex-shrink-0" />
 
         {navItems.map((item) => {
           if (!item) return null;
@@ -273,7 +255,7 @@ export default function Layout({ children }: LayoutProps) {
               key={item.path}
               to={item.path}
               onClick={() => setIsNavExpanded(false)}
-              className={`group relative p-2 md:p-2.5 transition-all duration-300 flex items-center ${
+              className={`group relative p-2 md:p-2.5 transition-all duration-300 flex items-center flex-shrink-0 ${
                 isNavExpanded 
                   ? 'justify-start w-full gap-2.5 md:gap-3 rounded-2xl px-3 md:px-4' 
                   : 'justify-center rounded-full w-9 h-9 md:w-10 md:h-10'
@@ -304,7 +286,7 @@ export default function Layout({ children }: LayoutProps) {
 
               {/* Tooltip (Only shown when NOT expanded, on hover) */}
               {!isNavExpanded && (
-                <div className="absolute right-full mr-3.5 top-1/2 -translate-y-1/2 bg-gray-900 dark:bg-zinc-950 text-white dark:text-zinc-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-gray-800 dark:border-zinc-800/50 opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 shadow-xl hidden md:block whitespace-nowrap">
+                <div className="absolute end-full me-3.5 top-1/2 -translate-y-1/2 bg-gray-900 dark:bg-zinc-950 text-white dark:text-zinc-200 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-gray-800 dark:border-zinc-800/50 opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 shadow-xl hidden md:block whitespace-nowrap">
                   {item.label}
                 </div>
               )}
@@ -323,14 +305,14 @@ export default function Layout({ children }: LayoutProps) {
           <motion.div 
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="fixed bottom-6 start-6 md:start-8 z-45"
+            className="fixed bottom-5 start-4 md:bottom-6 md:start-8 z-[45]"
           >
             <a
               href={profile.cvUrl}
               target="_blank"
               rel="noopener noreferrer"
               download="Abdulrahman Kamal CV.pdf"
-              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 outline-none text-white font-bold py-3 px-5 rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_25px_rgba(37,99,235,0.6)] transition-all transform hover:-translate-y-0.5 group active:scale-95 text-xs uppercase tracking-wider font-sans cursor-pointer"
+              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 outline-none text-white font-bold py-3 px-4 md:px-5 rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_25px_rgba(37,99,235,0.6)] transition-all transform hover:-translate-y-0.5 group active:scale-95 text-xs uppercase tracking-wider font-sans cursor-pointer"
               id="download-cv-button"
             >
               <FileText className="w-4 h-4 text-white" />
@@ -339,8 +321,8 @@ export default function Layout({ children }: LayoutProps) {
           </motion.div>
         )}
 
-        {/* Dynamic page main route rendering */}
-        <main className="pt-6 md:pt-10 pb-24 md:pb-32 px-4 max-w-5xl mx-auto w-full">
+        {/* Dynamic page main route rendering with right dock clearance on < lg */}
+        <main className="pt-6 md:pt-10 pb-24 md:pb-32 ps-4 pe-16 sm:pe-20 md:ps-6 md:pe-24 lg:px-4 max-w-5xl mx-auto w-full">
           {children}
         </main>
 

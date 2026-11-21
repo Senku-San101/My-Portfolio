@@ -201,7 +201,7 @@ export function clearLoginLockout(): void {
 }
 
 /**
- * Automatically logs a verified successful login into the immutable `login_logs` collection
+ * Automatically logs a verified successful login into the `login_logs` audit collection
  */
 export async function recordSuccessfulLogin(
   user: { email?: string | null; uid: string },

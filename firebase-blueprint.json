@@ -96,7 +96,8 @@
         "certificatesSubtitle": { "type": "string" },
         "skillsSubtitle": { "type": "string" },
         "blogsSubtitle": { "type": "string" },
-        "showVideoThumbnailAsProjectImage": { "type": "boolean" }
+        "showVideoThumbnailAsProjectImage": { "type": "boolean" },
+        "showTerminalEntrance": { "type": "boolean" }
       }
     },
     "specialization": {

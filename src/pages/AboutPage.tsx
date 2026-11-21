@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Mail, Linkedin, Github, MapPin, Globe, Briefcase, Award, FolderCode, Cog, BookOpen, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -21,8 +22,20 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
 
   const absoluteUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
   const embedUrl = isMobile 
@@ -35,10 +48,13 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 bg-black/95 backdrop-blur-2xl"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <button 
         onClick={onClose}
-        className="absolute top-4 right-4 md:top-8 md:right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[110]"
+        className="absolute top-4 right-4 md:top-8 md:right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[110] cursor-pointer"
         title="Close"
       >
         <XIcon className="w-6 h-6 md:w-8 md:h-8 text-white" />
@@ -48,7 +64,7 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
         initial={{ y: 50, opacity: 0, scale: 0.95 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 50, opacity: 0, scale: 0.95 }}
-        className="w-full max-w-5xl h-[85vh] md:h-[90vh] bg-white dark:bg-[#0c0c0e] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col border border-gray-200 dark:border-white/10"
+        className="w-full max-w-5xl h-[85dvh] md:h-[90dvh] bg-white dark:bg-[#0c0c0e] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col border border-gray-200 dark:border-white/10"
       >
         {isMobile ? (
           <div className="p-4 bg-[#1C1C1E] dark:bg-[#0c0c0e] border-b border-gray-200 dark:border-white/10 flex flex-col gap-3">
@@ -127,7 +143,7 @@ function CVViewer({ url, onClose }: { url: string; onClose: () => void }) {
 
 function GloriousName({ text }: { text: string }) {
   return (
-    <div className="relative inline-block group px-4">
+    <div className="relative inline-block group px-2 sm:px-4 max-w-full">
       {/* Glitch Layers */}
       <div className="relative z-10">
         <div className="absolute inset-0 text-red-500 mix-blend-screen font-black pointer-events-none glitch-red opacity-0 group-hover:opacity-100 transition-opacity">
@@ -226,19 +242,21 @@ export default function AboutPage() {
   const lastName = nameParts.slice(1).join(' ');
 
   return (
-    <PageWrapper className="max-w-5xl mx-auto space-y-32">
+    <PageWrapper className="max-w-5xl mx-auto space-y-20 md:space-y-32">
       {/* Centered Hero Section */}
-      <section id="profile-hero" className="flex flex-col items-center text-center gap-16 pt-12">
+      <section id="profile-hero" className="flex flex-col items-center text-center gap-10 md:gap-16 pt-4 md:pt-12">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className="relative"
         >
-          <div className="w-64 h-64 md:w-80 md:h-80 rounded-full overflow-hidden glass-md p-1.5 relative group">
+          <div className="w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-full overflow-hidden glass-md p-1.5 relative group">
             <img 
               src={data.photoUrl || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800"} 
               alt="Profile" 
+              fetchPriority="high"
+              decoding="async"
               className="w-full h-full object-cover rounded-full transition-all duration-1000 scale-105 group-hover:scale-100"
             />
             <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -247,14 +265,14 @@ export default function AboutPage() {
           <motion.div 
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute -inset-4 border-2 border-dashed border-blue-500/20 rounded-full pointer-events-none"
+            className="absolute -inset-3 sm:-inset-4 border-2 border-dashed border-blue-500/20 rounded-full pointer-events-none"
           />
         </motion.div>
 
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="space-y-8 w-full"
+          className="space-y-6 sm:space-y-8 w-full"
         >
           <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] border border-blue-500/20 mx-auto">
             <motion.div
@@ -266,8 +284,8 @@ export default function AboutPage() {
             <span>{t('liveFeed')}</span>
           </div>
 
-          <h1 className="text-6xl md:text-9xl font-black tracking-tighter uppercase leading-[0.85] flex flex-col items-center">
-            <div className="overflow-hidden py-2">
+          <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter uppercase leading-[0.88] sm:leading-[0.85] flex flex-col items-center max-w-full">
+            <div className="overflow-hidden py-1 sm:py-2 max-w-full">
               <motion.div
                 initial={{ y: 150 }}
                 animate={{ y: 0 }}
@@ -276,7 +294,7 @@ export default function AboutPage() {
                 <GloriousName text={firstName} />
               </motion.div>
             </div>
-            <div className="overflow-hidden py-2">
+            <div className="overflow-hidden py-1 sm:py-2 max-w-full">
               <motion.div
                 initial={{ y: 150 }}
                 animate={{ y: 0 }}
@@ -287,16 +305,16 @@ export default function AboutPage() {
             </div>
           </h1>
 
-          <div className="space-y-4 max-w-2xl mx-auto">
+          <div className="space-y-4 max-w-2xl mx-auto px-2">
             <motion.p 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="text-2xl md:text-3xl text-gray-400 dark:text-gray-500 font-bold tracking-tight"
+              className="text-xl sm:text-2xl md:text-3xl text-gray-500 dark:text-gray-400 font-bold tracking-tight"
             >
                {data.title}
             </motion.p>
-            <div className="text-lg md:text-xl text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
+            <div className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
               <Typewriter text={data.bio} delay={1200} speed={40} />
             </div>
           </div>
@@ -305,23 +323,23 @@ export default function AboutPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.5 }}
-            className="flex flex-wrap justify-center gap-6 pt-8"
+            className="flex flex-wrap justify-center gap-3.5 sm:gap-6 pt-4 sm:pt-8"
           >
             {data.email && (
-              <button onClick={() => openLink(`mailto:${data.email}`)} className="glass-sm px-8 py-4 rounded-full hover:scale-105 transition-all hover:bg-blue-500/10 flex items-center space-x-3 border border-blue-500/20 shadow-xl group">
+              <button onClick={() => openLink(`mailto:${data.email}`)} className="glass-sm px-6 sm:px-8 py-3.5 sm:py-4 rounded-full hover:scale-105 transition-all hover:bg-blue-500/10 flex items-center space-x-3 border border-blue-500/20 shadow-xl group cursor-pointer">
                 <Mail className="w-5 h-5 text-blue-500" />
                 <span className="text-xs font-black uppercase tracking-widest">{t('establishLink')}</span>
               </button>
             )}
             <div className="flex space-x-4">
               {data.linkedin && (
-                <button onClick={() => openLink(data.linkedin!)} className="glass-sm p-4 rounded-full hover:scale-110 transition-all hover:bg-blue-500/10 border border-white/10">
-                  <Linkedin className="w-6 h-6 text-gray-500" />
+                <button onClick={() => openLink(data.linkedin!)} className="glass-sm p-4 rounded-full hover:scale-110 transition-all hover:bg-blue-500/10 border border-gray-200 dark:border-white/10 cursor-pointer">
+                  <Linkedin className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                 </button>
               )}
               {data.github && (
-                <button onClick={() => openLink(data.github!)} className="glass-sm p-4 rounded-full hover:scale-110 transition-all hover:bg-blue-500/10 border border-white/10">
-                  <Github className="w-6 h-6 text-gray-500" />
+                <button onClick={() => openLink(data.github!)} className="glass-sm p-4 rounded-full hover:scale-110 transition-all hover:bg-blue-500/10 border border-gray-200 dark:border-white/10 cursor-pointer">
+                  <Github className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                 </button>
               )}
             </div>
@@ -330,10 +348,10 @@ export default function AboutPage() {
               <div className="flex items-center gap-3 w-full md:w-auto">
                 <button 
                   onClick={() => setShowCV(true)}
-                  className="flex-1 md:flex-initial glass-sm px-8 py-4 rounded-full hover:scale-[1.03] active:scale-[0.98] transition-all bg-white/5 border border-white/10 flex items-center justify-center space-x-3 group shadow-xl hover:border-blue-500/30 hover:bg-blue-500/5 cursor-pointer"
+                  className="flex-1 md:flex-initial glass-sm px-8 py-4 rounded-full hover:scale-[1.03] active:scale-[0.98] transition-all bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center space-x-3 group shadow-xl hover:border-blue-500/30 hover:bg-blue-500/5 cursor-pointer"
                   title={language === 'en' ? 'View My CV' : 'عرض سيرتي الذاتية'}
                 >
-                  <Eye className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+                  <Eye className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0" />
                   <span className="text-xs font-black uppercase tracking-widest text-[#1D1D1F] dark:text-[#F5F5F7] whitespace-nowrap">
                     {t('downloadCv')}
                   </span>
@@ -343,10 +361,10 @@ export default function AboutPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   download="Abdulrahman Kamal CV.pdf"
-                  className="glass-sm p-4 rounded-full hover:scale-[1.08] active:scale-[0.95] transition-all bg-white/5 border border-white/10 flex items-center justify-center group shadow-xl hover:border-emerald-500/30 hover:bg-emerald-500/5 flex-shrink-0 cursor-pointer"
+                  className="glass-sm p-4 rounded-full hover:scale-[1.08] active:scale-[0.95] transition-all bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center group shadow-xl hover:border-emerald-500/30 hover:bg-emerald-500/5 flex-shrink-0 cursor-pointer"
                   title={language === 'en' ? 'Download CV' : 'تحميل سيرتي الذاتية'}
                 >
-                  <Download className="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" />
+                  <Download className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 transition-colors" />
                 </a>
               </div>
             )}
@@ -355,13 +373,13 @@ export default function AboutPage() {
       </section>
 
       {/* Mobile view interactive navigation suggesting next sections */}
-      <MobileExploreNavigation />
+      <MobileExploreNavigation settings={settings} />
 
-      <section id="specializations" className="space-y-16">
+      <section id="specializations" className="space-y-10 sm:space-y-16">
         <div className="text-center space-y-4">
-          <h2 className="text-5xl font-black tracking-tighter uppercase italic text-blue-500/20 dark:text-white/10">{t('specializations')}</h2>
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tighter uppercase italic text-blue-500/25 dark:text-white/10">{t('specializations')}</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {specializations && specializations.length > 0 ? (
             specializations.map((spec, i) => (
               <motion.div
@@ -371,17 +389,19 @@ export default function AboutPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -15, borderColor: 'rgba(59, 130, 246, 0.5)' }}
-                className="glass-sm p-12 rounded-[3rem] border border-white/10 shadow-2xl group transition-all duration-500 flex flex-col justify-between"
+                className="glass-sm p-6 sm:p-10 md:p-12 rounded-[2rem] sm:rounded-[3rem] border border-gray-200/80 dark:border-white/10 shadow-2xl group transition-all duration-500 flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-8 gap-4">
+                  <div className="flex items-center justify-between mb-6 sm:mb-8 gap-4">
                     <div className="w-12 h-1 bg-blue-500/30 group-hover:w-20 transition-all duration-700 flex-shrink-0" />
                     {spec.imageUrl && (
                       <ImageViewer images={[spec.imageUrl]} label={spec.title}>
-                        <div className="w-28 sm:w-32 md:w-36 aspect-video rounded-2xl overflow-hidden glass-sm border border-white/10 flex-shrink-0 bg-black/40 relative shadow-lg group/img hover:border-blue-500/50 transition-all duration-300">
+                        <div className="w-24 sm:w-32 md:w-36 aspect-video rounded-2xl overflow-hidden glass-sm border border-gray-200 dark:border-white/10 flex-shrink-0 bg-black/40 relative shadow-lg group/img hover:border-blue-500/50 transition-all duration-300">
                           <img 
                             src={spec.imageUrl} 
                             alt={spec.title} 
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover rounded-2xl group-hover/img:scale-105 transition-transform duration-500" 
                             referrerPolicy="no-referrer" 
                           />
@@ -390,8 +410,8 @@ export default function AboutPage() {
                       </ImageViewer>
                     )}
                   </div>
-                  <h3 className="text-3xl font-black mb-6 tracking-tight leading-none italic group-hover:text-blue-500 transition-colors uppercase break-words">{spec.title}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 leading-relaxed font-medium text-lg">{spec.description}</p>
+                  <h3 className="text-2xl sm:text-3xl font-black mb-4 sm:mb-6 tracking-tight leading-none italic group-hover:text-blue-500 transition-colors uppercase break-words">{spec.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-base sm:text-lg">{spec.description}</p>
                 </div>
               </motion.div>
             ))
@@ -404,24 +424,27 @@ export default function AboutPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -15, borderColor: 'rgba(59, 130, 246, 0.5)' }}
-                className="glass-sm p-12 rounded-[3rem] border border-white/10 shadow-2xl group transition-all duration-500"
+                className="glass-sm p-6 sm:p-10 md:p-12 rounded-[2rem] sm:rounded-[3rem] border border-gray-200/80 dark:border-white/10 shadow-2xl group transition-all duration-500"
               >
-                <div className="w-12 h-1 bg-blue-500/30 mb-8 group-hover:w-full transition-all duration-700" />
-                <h3 className="text-3xl font-black mb-6 tracking-tight leading-none italic group-hover:text-blue-500 transition-colors uppercase">{spec}</h3>
-                <p className="text-gray-500 dark:text-gray-400 leading-relaxed font-medium text-lg">Detailed proficiency in {spec.toLowerCase()} operational frameworks.</p>
+                <div className="w-12 h-1 bg-blue-500/30 mb-6 sm:mb-8 group-hover:w-full transition-all duration-700" />
+                <h3 className="text-2xl sm:text-3xl font-black mb-4 sm:mb-6 tracking-tight leading-none italic group-hover:text-blue-500 transition-colors uppercase">{spec}</h3>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-medium text-base sm:text-lg">Detailed proficiency in {spec.toLowerCase()} operational frameworks.</p>
               </motion.div>
             ))
           )}
         </div>
       </section>
 
-      <AnimatePresence>
-        {showCV && data.cvUrl && (
-          <CVViewer url={data.cvUrl} onClose={() => setShowCV(false)} />
-        )}
-      </AnimatePresence>
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showCV && data.cvUrl && (
+            <CVViewer url={data.cvUrl} onClose={() => setShowCV(false)} />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
       {/* Contact Section */}
-      <section id="contact" className="space-y-16 py-20 border-t border-gray-100 dark:border-white/5">
+      <section id="contact" className="space-y-10 sm:space-y-16 py-12 md:py-20 border-t border-gray-200/70 dark:border-white/5">
         <div className="text-center space-y-4">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -431,11 +454,11 @@ export default function AboutPage() {
             <Shield className="w-4 h-4" />
             <span>{t('contact')}</span>
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic">{t('contactTitle')}</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase italic">{t('contactTitle')}</h2>
         </div>
 
         <div className="max-w-xl mx-auto">
-          <ContactForm />
+          <ContactForm settings={settings} />
         </div>
       </section>
     </PageWrapper>
@@ -451,18 +474,8 @@ const sectionDefinitions: Record<string, { labelKey: string; path: string; icon:
   contact: { labelKey: 'contactNav', path: '/contact', icon: Mail, color: 'text-blue-600 bg-blue-500/10 dark:bg-blue-500/20 border-blue-500/20' },
 };
 
-function MobileExploreNavigation() {
+function MobileExploreNavigation({ settings }: { settings: AppSettings | null }) {
   const { t } = useLanguage();
-  const [settings, setSettings] = useState<any>(null);
-
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'config'), (snap) => {
-      if (snap.exists()) {
-        setSettings(snap.data());
-      }
-    });
-    return () => unsub();
-  }, []);
 
   const defaultDesktopNav = ['about', 'blog', 'experience', 'projects', 'certificates', 'skills', 'contact'];
   const desktopOrderKeys = settings?.desktopNavOrder && settings.desktopNavOrder.length > 0 
@@ -501,7 +514,7 @@ function MobileExploreNavigation() {
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 max-w-5xl mx-auto px-4 text-start">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 max-w-5xl mx-auto px-2 sm:px-4 text-start">
         {sections.map((sec, i) => {
           if (!sec) return null;
           return (
@@ -514,10 +527,10 @@ function MobileExploreNavigation() {
             >
               <Link
                 to={sec.path}
-                className="flex items-center justify-between p-4 bg-white/5 border border-gray-100 dark:border-white/5 rounded-3xl hover:bg-gray-100 dark:hover:bg-white/10 active:scale-[0.98] transition-all group shadow-sm"
+                className="flex items-center justify-between p-4 bg-white/75 dark:bg-white/5 border border-gray-200/80 dark:border-white/5 rounded-2xl sm:rounded-3xl hover:bg-gray-100 dark:hover:bg-white/10 active:scale-[0.98] transition-all group shadow-sm"
               >
                 <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                  <div className={`p-3 rounded-2xl border border-white/5 ${sec.color}`}>
+                  <div className={`p-3 rounded-2xl border border-gray-200/60 dark:border-white/5 ${sec.color}`}>
                     <sec.icon className="w-5 h-5 flex-shrink-0" />
                   </div>
                   <span className="text-xs font-bold uppercase tracking-wider text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -534,14 +547,16 @@ function MobileExploreNavigation() {
   );
 }
 
-function ContactForm() {
+function ContactForm({ settings }: { settings: AppSettings | null }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const isMaintenance = Boolean(settings?.maintenanceMode);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isMaintenance) return;
     setLoading(true);
     setError(null);
 
@@ -585,33 +600,44 @@ function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {isMaintenance && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-mono text-center">
+          {settings?.maintenanceMessage?.trim() ||
+            (language === 'ar'
+              ? 'الوضع الآمن مفعل حالياً — تم تعطيل إرسال النماذج مؤقتاً.'
+              : 'Read-only Safe Mode is currently active — form submissions are temporarily paused.')}
+        </div>
+      )}
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 pl-4">{t('contactName')}</label>
+        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 ps-4">{t('contactName')}</label>
         <input 
           required
+          disabled={isMaintenance}
           name="name"
           type="text"
-          className="w-full glass-md px-6 py-4 rounded-2xl border-transparent focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400"
+          className="w-full glass-md px-5 sm:px-6 py-4 rounded-2xl border border-gray-200/80 dark:border-white/10 focus:border-blue-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400 disabled:opacity-50"
           placeholder={t('placeholderName')}
         />
       </div>
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 pl-4">{t('contactEmail')}</label>
+        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 ps-4">{t('contactEmail')}</label>
         <input 
           required
+          disabled={isMaintenance}
           name="email"
           type="email"
-          className="w-full glass-md px-6 py-4 rounded-2xl border-transparent focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400"
+          className="w-full glass-md px-5 sm:px-6 py-4 rounded-2xl border border-gray-200/80 dark:border-white/10 focus:border-blue-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400 disabled:opacity-50"
           placeholder={t('placeholderEmail')}
         />
       </div>
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 pl-4">{t('contactMessage')}</label>
+        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 ps-4">{t('contactMessage')}</label>
         <textarea 
           required
+          disabled={isMaintenance}
           name="message"
           rows={5}
-          className="w-full glass-md px-6 py-4 rounded-3xl border-transparent focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400 resize-none"
+          className="w-full glass-md px-5 sm:px-6 py-4 rounded-3xl border border-gray-200/80 dark:border-white/10 focus:border-blue-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400 resize-none disabled:opacity-50"
           placeholder={t('placeholderMessage')}
         />
       </div>
@@ -619,8 +645,8 @@ function ContactForm() {
       {error && <p className="text-red-500 text-xs font-mono text-center">{error}</p>}
 
       <button 
-        disabled={loading}
-        className="w-full glass-md px-8 py-6 rounded-3xl hover:bg-blue-500 hover:text-white transition-all transform hover:scale-[1.02] active:scale-[0.98] font-black uppercase tracking-[0.2em] flex items-center justify-center space-x-3 group"
+        disabled={loading || isMaintenance}
+        className="w-full glass-md px-8 py-5 sm:py-6 rounded-3xl border border-gray-200/80 dark:border-white/10 hover:bg-blue-500 hover:text-white transition-all transform hover:scale-[1.02] active:scale-[0.98] font-black uppercase tracking-[0.2em] flex items-center justify-center space-x-3 group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span>{loading ? t('placeholderTransmitting') : t('contactSend')}</span>
         {!loading && <Shield className="w-5 h-5 group-hover:rotate-12 transition-transform" />}

@@ -178,12 +178,12 @@ export default function ProjectsPage() {
   }
 
   return (
-    <PageWrapper className="space-y-16 py-8">
+    <PageWrapper className="space-y-12 md:space-y-16 py-8">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic">
+        <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tighter uppercase italic">
           <ScrambleHeader text={t('secLab')} />
         </h1>
-        <div className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto font-medium">
+        <div className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto font-medium text-sm md:text-base">
           <Typewriter key={settings?.projectsSubtitle || "default"} text={settings?.projectsSubtitle || "A showcase of specialized environments and tools built to simulate, detect, and respond to modern cyber threats."} delay={800} />
         </div>
       </div>
@@ -193,7 +193,7 @@ export default function ProjectsPage() {
         <div className="bg-gray-100 dark:bg-white/5 p-1 rounded-2xl border border-gray-200 dark:border-white/10 flex items-center space-x-1">
           <button
             onClick={() => setViewMode('console')}
-            className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all relative ${
+            className={`flex items-center space-x-2 px-3.5 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all relative ${
               viewMode === 'console' ? 'text-white' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -211,7 +211,7 @@ export default function ProjectsPage() {
           </button>
           <button
             onClick={() => setViewMode('grid')}
-            className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all relative ${
+            className={`flex items-center space-x-2 px-3.5 sm:px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all relative ${
               viewMode === 'grid' ? 'text-white' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -304,7 +304,7 @@ export default function ProjectsPage() {
               {/* ACTIVE DETAILS PANEL (Desktop: 8-cols, Mobile: swipe deck) */}
               <div id="active-project-console" className="col-span-1 md:col-span-8">
                 {/* Horizontal swipeable project directory for Mobile */}
-                <div className="flex md:hidden overflow-x-auto gap-2.5 pb-4 pt-1 mb-2 px-1 scrollbar-none snap-x snap-mandatory">
+                <div className="flex md:hidden overflow-x-auto gap-2.5 pb-4 pt-1 mb-2 px-1 no-scrollbar snap-x snap-mandatory">
                   {projects.map((proj, idx) => {
                     const isActive = idx === safeActiveIndex;
                     return (
@@ -327,10 +327,10 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* Mobile top pager dots and arrows overlay */}
-                <div className="flex md:hidden items-center justify-between p-4 glass-md rounded-2xl border border-white/5 mb-6">
+                <div className="flex md:hidden items-center justify-between p-4 glass-md rounded-2xl border border-gray-200/70 dark:border-white/10 mb-6">
                   <button 
                     onClick={handlePrev}
-                    className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 active:scale-95 transition-all text-gray-700 dark:text-white"
+                    className="p-3 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-200 dark:hover:bg-white/10 active:scale-95 transition-all text-gray-700 dark:text-white cursor-pointer"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -338,12 +338,12 @@ export default function ProjectsPage() {
                   <div className="text-center font-mono text-xs uppercase tracking-wider">
                     <span className="text-blue-500 font-bold">{safeActiveIndex + 1}</span>
                     <span className="text-gray-500 px-1">/</span>
-                    <span className="text-gray-400">{projects.length}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{projects.length}</span>
                   </div>
 
                   <button 
                     onClick={handleNext}
-                    className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 active:scale-95 transition-all text-gray-700 dark:text-white"
+                    className="p-3 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-200 dark:hover:bg-white/10 active:scale-95 transition-all text-gray-700 dark:text-white cursor-pointer"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -363,8 +363,8 @@ export default function ProjectsPage() {
                     <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500" />
 
                     {activeProject?.inProgress && (
-                      <div className="absolute top-6 right-6 z-20">
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 border border-amber-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.25)] animate-pulse">
+                      <div className="absolute top-3 end-3 sm:top-6 sm:end-6 z-20">
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.25)] animate-pulse">
                           {t('inProgress')}
                         </span>
                       </div>
@@ -401,6 +401,7 @@ export default function ProjectsPage() {
                                   <img 
                                     src={displayMedia.pictureUrl} 
                                     alt={activeProject?.title} 
+                                    decoding="async"
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                                   />
                                 )}
@@ -432,7 +433,7 @@ export default function ProjectsPage() {
                     })()}
 
                     {/* Console Info */}
-                    <div className="p-8 md:p-10 space-y-6">
+                    <div className="p-5 sm:p-8 md:p-10 space-y-6">
                       <div className="space-y-4">
                         <div className="flex flex-wrap items-center gap-3">
                           <span className="text-[10px] font-black font-mono tracking-widest uppercase bg-blue-500/10 text-blue-500 px-3 py-1 rounded-md border border-blue-500/10">
@@ -443,17 +444,17 @@ export default function ProjectsPage() {
                           </span>
                         </div>
 
-                        <h3 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 dark:text-white leading-none">
+                        <h3 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-gray-900 dark:text-white leading-tight break-words">
                           {activeProject?.title}
                         </h3>
 
-                        <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base leading-relaxed max-w-3xl">
+                        <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base leading-relaxed max-w-3xl">
                           {activeProject?.description}
                         </p>
                       </div>
 
                       {/* Tech Spec Grid */}
-                      <div className="pt-6 border-t border-white/5 space-y-3">
+                      <div className="pt-6 border-t border-gray-200/70 dark:border-white/5 space-y-3">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
                           <Cpu className="w-3.5 h-3.5 text-blue-500" />
                           <span>{language === 'en' ? 'System Specifications' : 'مواصفات النظام'}</span>
@@ -471,7 +472,7 @@ export default function ProjectsPage() {
                       </div>
 
                       {/* Launch Actions */}
-                      <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="pt-6 border-t border-gray-200/70 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         {/* Gallery / Video toggle built inside if available */}
                         {(() => {
                           if (!activeProject) return null;
@@ -498,7 +499,7 @@ export default function ProjectsPage() {
                           );
                         })()}
 
-                        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:ml-auto justify-end">
+                        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto sm:ml-auto justify-start sm:justify-end">
                           {activeProject && (
                             <button 
                               onClick={() => copyShareLink(activeProject.id!)}
@@ -573,12 +574,12 @@ export default function ProjectsPage() {
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.4, delay: Math.min(i * 0.05, 0.3) }}
-                    className={`glass-md overflow-hidden rounded-[2.5rem] border border-white/5 flex flex-col h-full hover:shadow-2xl hover:border-blue-500/30 transition-all duration-500 group relative ${
+                    className={`glass-md overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] border border-gray-200/80 dark:border-white/10 flex flex-col h-full hover:shadow-2xl hover:border-blue-500/30 transition-all duration-500 group relative ${
                       isFeatured ? 'md:col-span-2' : ''
                     }`}
                   >
                     {project.inProgress && (
-                      <div className="absolute inset-0 bg-[#0a0a0c]/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-[2.5rem]">
+                      <div className="absolute inset-0 bg-[#0a0a0c]/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-[2rem] sm:rounded-[2.5rem]">
                         <div className="bg-blue-600 dark:bg-blue-500 text-white font-mono font-black text-xs uppercase tracking-[0.25em] px-5 py-3 rounded-full border border-white/10 shadow-[0_0_30px_rgba(59,130,246,0.4)]">
                           {t('inProgress')}
                         </div>
@@ -605,6 +606,8 @@ export default function ProjectsPage() {
                                <img 
                                  src={displayMedia.pictureUrl} 
                                  alt={project.title} 
+                                 loading={i < 3 ? 'eager' : 'lazy'}
+                                 decoding="async"
                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                                />
                              )}
@@ -628,7 +631,7 @@ export default function ProjectsPage() {
                        )}
                     </div>
 
-                    <div className="p-8 flex-1 space-y-6 flex flex-col">
+                    <div className="p-5 sm:p-8 flex-1 space-y-5 sm:space-y-6 flex flex-col">
                       <div className="flex-1 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-[9px] font-black font-mono tracking-widest text-blue-500">
@@ -638,10 +641,10 @@ export default function ProjectsPage() {
                             #{project.order ?? i}
                           </span>
                         </div>
-                        <h3 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                        <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white break-words">
                           {project.title}
                         </h3>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed line-clamp-3">
+                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-3">
                           {project.description}
                         </p>
                       </div>
@@ -650,14 +653,14 @@ export default function ProjectsPage() {
                         {(project.technologies || []).slice(0, 5).map((tag) => (
                           <span 
                             key={tag} 
-                            className="text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 border border-gray-200 dark:border-white/5"
+                            className="text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/5"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
 
-                      <div className="pt-4 flex flex-col space-y-4 border-t border-white/5">
+                      <div className="pt-4 flex flex-col space-y-4 border-t border-gray-200/70 dark:border-white/5">
                         {displayMedia.allMedia.length > 0 && (
                           <ImageViewer 
                             images={displayMedia.allMedia} 

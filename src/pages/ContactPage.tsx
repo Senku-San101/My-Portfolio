@@ -43,6 +43,7 @@ export default function ContactPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [copiedMethodId, setCopiedMethodId] = useState<string | null>(null);
   const { language, t } = useLanguage();
 
   const [formState, setFormState] = useState({ name: '', email: '', message: '' });
@@ -89,8 +90,11 @@ export default function ContactPage() {
     setFormState((prev) => ({ ...prev, [name]: value }));
   };
 
+  const isMaintenance = Boolean(settings?.maintenanceMode);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isMaintenance) return;
     setSubmitting(true);
     setSubmitError(null);
 
@@ -134,12 +138,12 @@ export default function ContactPage() {
   return (
     <PageWrapper className="max-w-5xl mx-auto py-8">
       {/* Page Header */}
-      <div className="text-center space-y-4 mb-16">
+      <div className="text-center space-y-4 mb-10 md:mb-16">
         <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] border border-blue-500/20 mx-auto">
           <Mail className="w-3.5 h-3.5" />
           <span>{language === 'en' ? "LET'S CONNECT" : 'تواصل معي'}</span>
         </div>
-        <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic text-[#1D1D1F] dark:text-[#F5F5F7]">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase italic text-[#1D1D1F] dark:text-[#F5F5F7]">
           {language === 'en' ? 'Contact Me' : 'اتصل بي'}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 max-w-lg mx-auto text-sm font-medium">
@@ -149,10 +153,10 @@ export default function ContactPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-stretch">
         {/* Info Column (Left) */}
-        <div className="col-span-1 md:col-span-5 flex flex-col justify-between gap-8">
-          <div className="bg-white dark:bg-zinc-900/30 rounded-[2.5rem] p-8 border border-gray-200 dark:border-white/5 space-y-8 flex-1 flex flex-col justify-between shadow-sm">
+        <div className="col-span-1 md:col-span-5 flex flex-col justify-between gap-6 md:gap-8">
+          <div className="bg-white dark:bg-zinc-900/30 rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 border border-gray-200 dark:border-white/5 space-y-6 sm:space-y-8 flex-1 flex flex-col justify-between shadow-sm">
             <div className="space-y-6">
               <h3 className="text-xs font-black uppercase tracking-[0.25em] text-blue-500">
                 {language === 'en' ? 'Contact Information' : 'معلومات الاتصال'}
@@ -231,10 +235,11 @@ export default function ContactPage() {
                             }
                           } else {
                             navigator.clipboard.writeText(val);
-                            alert(language === 'en' ? `Copied to clipboard: ${val}` : `تم نسخ: ${val}`);
+                            setCopiedMethodId(method.id);
+                            setTimeout(() => setCopiedMethodId(null), 2000);
                           }
                         }}
-                        className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-300 transition-all text-sm font-bold text-left w-full cursor-pointer"
+                        className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-300 transition-all text-sm font-bold text-start w-full cursor-pointer"
                       >
                         <div className={`p-2 rounded-xl flex-shrink-0 ${getContactStyles(method.type)}`}>
                           {getContactIcon(method.type)}
@@ -245,6 +250,12 @@ export default function ContactPage() {
                           </span>
                           <span className="font-bold truncate block">{method.value}</span>
                         </div>
+                        {copiedMethodId === method.id && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-mono font-black uppercase text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full flex-shrink-0">
+                            <Check className="w-3 h-3" />
+                            <span>{language === 'en' ? 'Copied' : 'تم النسخ'}</span>
+                          </span>
+                        )}
                       </button>
                     ))
                   ) : (
@@ -252,7 +263,7 @@ export default function ContactPage() {
                       {data.linkedin && (
                         <button
                           onClick={() => openLink(data.linkedin!)}
-                          className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-all text-sm font-black uppercase tracking-wider text-left w-full"
+                          className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-all text-sm font-black uppercase tracking-wider text-start w-full"
                         >
                           <div className="p-2 bg-blue-500/10 text-blue-500 rounded-xl flex-shrink-0">
                             <Linkedin className="w-4 h-4" />
@@ -263,7 +274,7 @@ export default function ContactPage() {
                       {data.github && (
                         <button
                           onClick={() => openLink(data.github!)}
-                          className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-all text-sm font-black uppercase tracking-wider text-left w-full"
+                          className="flex items-center gap-3.5 p-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[0.02] hover:bg-gray-50 dark:hover:bg-white/10 text-gray-800 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-all text-sm font-black uppercase tracking-wider text-start w-full"
                         >
                           <div className="p-2 bg-gray-500/10 text-gray-600 dark:text-white rounded-xl flex-shrink-0">
                             <Github className="w-4 h-4" />
@@ -281,7 +292,7 @@ export default function ContactPage() {
 
         {/* Messaging (Right) */}
         <div className="col-span-1 md:col-span-7">
-          <div className="bg-white dark:bg-zinc-900/30 rounded-[2.5rem] p-8 border border-gray-200 dark:border-white/5 shadow-sm h-full flex flex-col justify-between">
+          <div className="bg-white dark:bg-zinc-900/30 rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 border border-gray-200 dark:border-white/5 shadow-sm h-full flex flex-col justify-between">
             <div className="mb-6">
               <h3 className="text-xs font-black uppercase tracking-[0.25em] text-blue-500 mb-2">
                 {language === 'en' ? 'Send a Message' : 'إرسال رسالة'}
@@ -324,47 +335,58 @@ export default function ContactPage() {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5 flex-1 flex flex-col justify-between">
                   <div className="space-y-4">
+                    {isMaintenance && (
+                      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-mono text-center">
+                        {settings?.maintenanceMessage?.trim() ||
+                          (language === 'ar'
+                            ? 'الوضع الآمن مفعل حالياً — تم تعطيل إرسال النماذج مؤقتاً.'
+                            : 'Read-only Safe Mode is currently active — form submissions are temporarily paused.')}
+                      </div>
+                    )}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 block pl-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 block ps-2">
                         {t('contactName')}
                       </label>
                       <input 
                         required
+                        disabled={isMaintenance}
                         name="name"
                         type="text"
                         value={formState.name}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400 text-sm py-3.5 px-4.5 rounded-xl text-gray-900 dark:text-white font-bold"
+                        className="w-full bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400 text-sm py-3.5 px-4.5 rounded-xl text-gray-900 dark:text-white font-bold disabled:opacity-50"
                         placeholder={t('placeholderName')}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 block pl-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 block ps-2">
                         {t('contactEmail')}
                       </label>
                       <input 
                         required
+                        disabled={isMaintenance}
                         name="email"
                         type="email"
                         value={formState.email}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400 text-sm py-3.5 px-4.5 rounded-xl text-gray-900 dark:text-white font-bold"
+                        className="w-full bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400 text-sm py-3.5 px-4.5 rounded-xl text-gray-900 dark:text-white font-bold disabled:opacity-50"
                         placeholder={t('placeholderEmail')}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 block pl-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 block ps-2">
                         {t('contactMessage')}
                       </label>
                       <textarea 
                         required
+                        disabled={isMaintenance}
                         name="message"
                         rows={4}
                         value={formState.message}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400 text-sm py-3.5 px-4.5 rounded-2xl text-gray-900 dark:text-white font-bold resize-none"
+                        className="w-full bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/5 focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-400 text-sm py-3.5 px-4.5 rounded-2xl text-gray-900 dark:text-white font-bold resize-none disabled:opacity-50"
                         placeholder={t('placeholderMessage')}
                       />
                     </div>
@@ -376,8 +398,8 @@ export default function ContactPage() {
 
                   <button 
                     type="submit"
-                    disabled={submitting}
-                    className="w-full mt-4 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl py-4 px-8 text-xs font-black uppercase tracking-widest hover:opacity-95 transition-all shadow-[0_8px_25px_rgba(37,99,235,0.25)] flex items-center justify-center gap-2.5 duration-200 cursor-pointer disabled:opacity-50"
+                    disabled={submitting || isMaintenance}
+                    className="w-full mt-4 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl py-4 px-8 text-xs font-black uppercase tracking-widest hover:opacity-95 transition-all shadow-[0_8px_25px_rgba(37,99,235,0.25)] flex items-center justify-center gap-2.5 duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span>{submitting ? t('placeholderTransmitting') : t('contactSend')}</span>
                     {!submitting && <Send className="w-4 h-4" />}

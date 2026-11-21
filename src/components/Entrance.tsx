@@ -29,7 +29,7 @@ export default function Entrance({ onComplete }: EntranceProps) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && (user.email === '000means000@gmail.com' || user.email === 'abdulrahmankamal609@gmail.com')) {
+      if (user && (user.email === '000means000@gmail.com' || user.email === 'abdo@kamal.portfolio')) {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
@@ -43,40 +43,48 @@ export default function Entrance({ onComplete }: EntranceProps) {
       const timer = setTimeout(() => {
         setLogs(prev => [...prev, TERMINAL_LOGS[currentLogIndex].text]);
         setCurrentLogIndex(prev => prev + 1);
-      }, currentLogIndex === 0 ? 500 : 300);
+      }, currentLogIndex === 0 ? 180 : 140);
       return () => clearTimeout(timer);
     } else {
-      setTimeout(() => setIsFinished(true), 1000);
+      const doneTimer = setTimeout(() => setIsFinished(true), 300);
+      return () => clearTimeout(doneTimer);
     }
   }, [currentLogIndex]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 overflow-hidden"
+      className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden"
     >
       {/* Background Matrix-like grid */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
           backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`,
           backgroundSize: '40px 40px'
         }}
       />
-      
+
       {/* Scanline Effect */}
       <div className="absolute inset-0 pointer-events-none z-10 scanline overflow-hidden">
-        <div className="w-full h-[100vh] bg-gradient-to-b from-transparent via-blue-500/10 to-transparent animate-scan" />
+        <div className="w-full h-dvh bg-gradient-to-b from-transparent via-blue-500/10 to-transparent animate-scan" />
       </div>
 
-      <div className={`w-full max-w-2xl bg-[#0a0a0a] border ${isAdmin ? 'border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)]' : 'border-gray-800/50'} rounded-2xl p-8 shadow-2xl relative overflow-hidden transition-colors duration-1000`}>
-        <div className="flex items-center space-x-2 mb-8 border-b border-gray-800 pb-4">
+      <div className={`w-full max-w-2xl bg-[#0a0a0a] border ${isAdmin ? 'border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)]' : 'border-gray-800/50'} rounded-2xl p-5 sm:p-8 shadow-2xl relative overflow-hidden transition-colors duration-700`}>
+        <div className="flex items-center space-x-2 mb-6 sm:mb-8 border-b border-gray-800 pb-4">
           <Terminal className={`w-4 h-4 ${isAdmin ? 'text-blue-500' : 'text-gray-500'}`} />
-          <span className="text-xs font-mono text-gray-500 uppercase tracking-widest">
+          <span className="text-xs font-mono text-gray-500 uppercase tracking-widest truncate">
             {isAdmin ? 'Admin Portal v3.0.1' : 'Abdulrahman Kamal Portfolio v2.0.4'}
           </span>
           <div className="flex-1" />
+          <button
+            type="button"
+            onClick={onComplete}
+            className="text-[10px] font-mono uppercase tracking-wider text-gray-400 hover:text-white px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer mr-2"
+          >
+            Skip →
+          </button>
           <div className="flex space-x-1.5 leading-none">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/20" />
             <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20" />
@@ -84,7 +92,7 @@ export default function Entrance({ onComplete }: EntranceProps) {
           </div>
         </div>
 
-        <div className="space-y-2 font-mono text-sm sm:text-base mb-12 h-48 overflow-y-auto custom-scrollbar">
+        <div className="space-y-2 font-mono text-xs sm:text-base mb-8 sm:mb-12 h-44 sm:h-48 overflow-y-auto custom-scrollbar">
           {logs.map((log, i) => (
             <motion.div
               key={i}
@@ -96,14 +104,14 @@ export default function Entrance({ onComplete }: EntranceProps) {
                 isAdmin ? 'text-blue-400' : 'text-gray-400'
               }`}
             >
-              <span className="opacity-50">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
-              <span>{isAdmin && log.includes('A. Kamal') ? log.replace('User', 'ADMIN') : log}</span>
+              <span className="opacity-50 hidden sm:inline">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
+              <span>{log}</span>
             </motion.div>
           ))}
           {!isFinished && (
             <motion.div
               animate={{ opacity: [1, 0] }}
-              transition={{ repeat: Infinity, duration: 0.8 }}
+              transition={{ repeat: Infinity, duration: 0.6 }}
               className={`w-2 h-4 ${isAdmin ? 'bg-blue-500' : 'bg-gray-500'} inline-block align-middle ml-1`}
             />
           )}
@@ -114,31 +122,31 @@ export default function Entrance({ onComplete }: EntranceProps) {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center space-y-8"
+              className="text-center space-y-6 sm:space-y-8"
             >
-              <div className="flex justify-center items-center space-x-12 py-4">
+              <div className="flex justify-center items-center space-x-8 sm:space-x-12 py-2 sm:py-4">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}>
-                  <Shield className="w-10 h-10 text-white/20" />
+                  <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-white/20" />
                 </motion.div>
-                <motion.div 
-                   animate={isAdmin ? { scale: [1, 1.05, 1], rotate: [0, 90, 180, 270, 360] } : { scale: [1, 1.1, 1] }} 
+                <motion.div
+                  animate={isAdmin ? { scale: [1, 1.05, 1], rotate: [0, 90, 180, 270, 360] } : { scale: [1, 1.1, 1] }}
                   transition={{ duration: isAdmin ? 10 : 4, repeat: Infinity }}
-                  className={`${isAdmin ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/10'} p-6 rounded-full border shadow-2xl`}
+                  className={`${isAdmin ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/10'} p-5 sm:p-6 rounded-full border shadow-2xl`}
                 >
-                  {isAdmin ? <Cpu className="w-12 h-12 text-blue-400" /> : <Bot className="w-12 h-12 text-white" />}
+                  {isAdmin ? <Cpu className="w-10 h-10 sm:w-12 sm:h-12 text-blue-400" /> : <Bot className="w-10 h-10 sm:w-12 sm:h-12 text-white" />}
                 </motion.div>
                 <motion.div animate={{ rotate: -360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }}>
-                  <Lock className="w-10 h-10 text-white/20" />
+                  <Lock className="w-8 h-8 sm:w-10 sm:h-10 text-white/20" />
                 </motion.div>
               </div>
 
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <motion.button
                     onClick={onComplete}
                     whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.9)' }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex-1 py-5 bg-white text-black font-bold text-lg rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-all flex items-center justify-center space-x-3 group"
+                    className="flex-1 py-4 sm:py-5 bg-white text-black font-bold text-base sm:text-lg rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.1)] transition-all flex items-center justify-center space-x-3 group cursor-pointer"
                   >
                     <span>Explore Portfolio</span>
                     <Activity className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -152,7 +160,7 @@ export default function Entrance({ onComplete }: EntranceProps) {
                       }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="flex-1 py-5 bg-blue-600 text-white font-bold text-lg rounded-2xl shadow-[0_0_40px_rgba(37,99,235,0.2)] transition-all flex items-center justify-center space-x-3 group border border-blue-400/30"
+                      className="flex-1 py-4 sm:py-5 bg-blue-600 text-white font-bold text-base sm:text-lg rounded-2xl shadow-[0_0_40px_rgba(37,99,235,0.2)] transition-all flex items-center justify-center space-x-3 group border border-blue-400/30 cursor-pointer"
                     >
                       <span>Enter Admin Portal</span>
                       <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -175,16 +183,6 @@ export default function Entrance({ onComplete }: EntranceProps) {
         }
         .animate-scan {
           animation: scan 3s linear infinite;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
         }
       `}</style>
     </motion.div>

@@ -5,7 +5,7 @@
   --font-sans: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Glassmorphism utilities - Refined for "Soft" reading as requested */
+  /* Glassmorphism utilities - Refined for "Soft" reading */
   --glass-sm-bg: rgba(255, 255, 255, 0.05);
   --glass-sm-blur: 16px;
   
@@ -43,6 +43,10 @@
   animation: shimmer 8s linear infinite;
 }
 
+.animate-spin-slow {
+  animation: spin 10s linear infinite;
+}
+
 .glitch-red {
   animation: glitch-red 3s infinite linear alternate-reverse;
 }
@@ -53,13 +57,41 @@
 
 @layer utilities {
   .glass-sm {
-    @apply bg-white/40 dark:bg-white/[0.03] backdrop-blur-[16px] backdrop-saturate-[150%] border border-white/20 dark:border-white/10;
+    @apply bg-white/60 dark:bg-white/[0.03] backdrop-blur-[16px] backdrop-saturate-[150%] border border-gray-200/60 dark:border-white/10;
   }
   .glass-md {
-    @apply bg-white/60 dark:bg-white/[0.05] backdrop-blur-[24px] backdrop-saturate-[150%] border border-white/30 dark:border-white/10 shadow-lg;
+    @apply bg-white/75 dark:bg-white/[0.05] backdrop-blur-[24px] backdrop-saturate-[150%] border border-gray-200/70 dark:border-white/10 shadow-lg;
   }
   .glass-xl {
-    @apply bg-white/70 dark:bg-white/[0.08] backdrop-blur-[40px] backdrop-saturate-[180%] border border-white/40 dark:border-white/15 shadow-2xl;
+    @apply bg-white/85 dark:bg-white/[0.08] backdrop-blur-[40px] backdrop-saturate-[180%] border border-gray-200/80 dark:border-white/15 shadow-2xl;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+  }
+  .dark .custom-scrollbar {
+    scrollbar-color: rgba(148, 163, 184, 0.22) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.3);
+    border-radius: 9999px;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.22);
   }
 }
 
@@ -72,8 +104,27 @@
   }
 }
 
+html {
+  scroll-snap-type: y proximity;
+  scroll-behavior: smooth;
+  scrollbar-width: thin; /* Firefox scrollbar parity */
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+html.dark {
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
+
+/* Proportional, cross-browser mobile scaling without transform/zoom fixed-positioning bugs */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
 body {
   @apply bg-[#F2F2F7] text-[#1D1D1F] dark:bg-[#000000] dark:text-[#F5F5F7] font-sans antialiased;
+  overflow-x: clip;
   transition: background-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), color 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -82,7 +133,7 @@ body {
   transition: background-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Custom UI/UX comfort-engineered scrollbar */
+/* Custom UI/UX comfort-engineered scrollbar for Chromium & WebKit */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -93,7 +144,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(148, 163, 184, 0.25);
   border-radius: 9999px;
   border: 3px solid transparent;
   background-clip: padding-box;
@@ -101,13 +152,13 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.45);
   border: 3px solid transparent;
   background-clip: padding-box;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(148, 163, 184, 0.16);
   border: 3px solid transparent;
   background-clip: padding-box;
 }
@@ -116,21 +167,6 @@ body {
   background: rgba(148, 163, 184, 0.35);
   border: 3px solid transparent;
   background-clip: padding-box;
-}
-
-/* Make mobile view half smaller scale as requested, then increased by 0.1 scale */
-@media (max-width: 768px) {
-  html {
-    zoom: 0.6;
-    -moz-transform: scale(0.6);
-    -moz-transform-origin: top center;
-  }
-}
-
-/* Smooth scrolling and deliberate scroll-snapping for portfolio sections */
-html {
-  scroll-snap-type: y proximity;
-  scroll-behavior: smooth;
 }
 
 main section, .snap-section {
@@ -161,4 +197,14 @@ main section, .snap-section {
   z-index: 30 !important;
 }
 
-
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-shimmer,
+  .animate-spin-slow,
+  .glitch-red,
+  .glitch-cyan {
+    animation: none !important;
+  }
+}

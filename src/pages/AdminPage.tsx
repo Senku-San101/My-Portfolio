@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -13,6 +13,7 @@ import { db, OperationType, handleFirestoreError, auth } from '../lib/firebase';
 import { Experience, Project, Certificate, Skill, Profile, Message, Visit, Blog, AppSettings, Specialization, ContactMethod } from '../types';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { isVideoMedia, extractVideoInfo, captureVideoFrame, getProjectDisplayMedia } from '../lib/videoUtils';
+import { generateAndUploadThumbnail, isRasterImageUrl } from '../lib/imageUtils';
 import { AVAILABLE_SERVICE_ICONS, getServiceIcon } from '../lib/iconMap';
 import OpsVaultEditor from '../components/admin/OpsVaultEditor';
 import SecurityLogsViewer from '../components/admin/SecurityLogsViewer';
@@ -43,7 +44,7 @@ export default function AdminPage() {
         </Link>
       </div>
 
-      <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar">
+      <div className="flex overflow-x-auto pb-3 gap-2.5 sm:gap-4 no-scrollbar">
         {[
           { id: 'profile', label: 'Profile', icon: User },
           { id: 'specializations', label: 'Specializations', icon: Brain },
@@ -62,19 +63,19 @@ export default function AdminPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center space-x-2 px-6 py-3 rounded-2xl transition-all whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl transition-all whitespace-nowrap cursor-pointer ${
               activeTab === tab.id 
-                ? 'glass-xl text-blue-500 shadow-lg' 
-                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
+                ? 'glass-xl text-blue-600 dark:text-blue-500 shadow-lg' 
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
             }`}
           >
-            <tab.icon className="w-5 h-5" />
-            <span className="font-semibold">{tab.label}</span>
+            <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="font-semibold text-sm sm:text-base">{tab.label}</span>
           </button>
         ))}
       </div>
 
-      <div className="glass-md p-8 rounded-[2.5rem]">
+      <div className="glass-md p-4 sm:p-6 md:p-8 rounded-3xl sm:rounded-[2.5rem]">
         <AnimatePresence mode="wait">
           {activeTab === 'profile' && <ProfileEditor key="profile" />}
           {activeTab === 'specializations' && <SpecializationEditor key="specializations" />}
@@ -208,14 +209,19 @@ function AnalyticsViewer() {
 
   return (
     <div className="space-y-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard label="Total Visits" value={totalVisits.toString()} sub="Recent Signals" />
         <StatCard label="Engagement" value={`${avgDuration}s`} sub="Avg. Session" />
         <StatCard label="Inbox" value={counts.messages.toString()} sub="Contact Signals" color="text-blue-500" />
-        <StatCard label="Security" value="Active" sub="Threat Monitoring" color="text-green-500" />
+        <StatCard
+          label="Blob Assets"
+          value={loadingBlobs ? '—' : blobStats.fileCount.toString()}
+          sub={loadingBlobs ? 'Checking Storage...' : `${formatBytes(blobStats.usedBytes)} Used`}
+          color="text-green-500"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         <div className="lg:col-span-2 space-y-6">
           <h3 className="text-xl font-bold flex items-center"><Activity className="mr-2 w-5 h-5 text-blue-500" /> Infrastructure Analysis</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -228,7 +234,7 @@ function AnalyticsViewer() {
                 { label: 'Blogs', count: counts.blogs },
                 { label: 'Skills', count: counts.skills }
               ]}
-              usage="0.4% of Free Tier"
+              usage={`Synced Records: ${counts.projects + counts.certificates + counts.blogs + counts.skills + counts.messages + totalVisits}`}
               limit="1GiB Storage / 50k Reads Daily"
             />
             <ResourceCard 
@@ -236,29 +242,41 @@ function AnalyticsViewer() {
               status="Active" 
               items={[
                 { label: 'Used Storage', count: formatBytes(blobStats.usedBytes) as any },
-                { label: 'Free Space', count: formatBytes(blobStats.totalBytes - blobStats.usedBytes) as any },
+                { label: 'Free Space', count: formatBytes(Math.max(0, blobStats.totalBytes - blobStats.usedBytes)) as any },
                 { label: 'Total Capacity', count: formatBytes(blobStats.totalBytes) as any },
                 { label: 'Resource Count', count: blobStats.fileCount as any }
               ]}
               usage={`Consumption: ${blobStats.usedPercentage.toFixed(4)}%`}
-              limit={`${formatBytes(blobStats.totalBytes)} Free Tier Bucket`}
+              limit={`${formatBytes(blobStats.totalBytes)} Storage Bucket`}
             />
           </div>
         </div>
 
         <div className="space-y-6">
-          <h3 className="text-xl font-bold flex items-center"><ShieldCheck className="mr-2 w-5 h-5 text-blue-500" /> Resource Guard</h3>
-          <div className="glass-sm p-6 rounded-3xl space-y-4">
+          <h3 className="text-xl font-bold flex items-center"><ShieldCheck className="mr-2 w-5 h-5 text-blue-500" /> Storage Capacity</h3>
+          <div className="glass-sm p-6 rounded-3xl border border-gray-200 dark:border-white/5 space-y-4">
              <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-500 uppercase font-mono">Storage Integrity</span>
-                <span className="text-green-500 font-bold">100%</span>
+                <span className="text-gray-500 dark:text-gray-400 uppercase font-mono">Blob Quota Used</span>
+                <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{blobStats.usedPercentage.toFixed(2)}%</span>
              </div>
-             <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                <div className="w-full h-full bg-green-500" />
+             <div className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(blobStats.usedBytes > 0 ? 2 : 0, blobStats.usedPercentage))}%` }}
+                />
              </div>
-             <p className="text-[10px] text-gray-500 leading-relaxed uppercase font-mono opacity-60">
-                Resource monitoring is strictly observational. No instability detected in edge synchronization or database I/O.
-             </p>
+             <div className="grid grid-cols-2 gap-3 pt-1 text-[11px] font-mono">
+               <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+                 <span className="text-gray-500 block text-[9px] uppercase">Files Stored</span>
+                 <span className="font-bold text-gray-900 dark:text-white">{loadingBlobs ? '—' : blobStats.fileCount}</span>
+               </div>
+               <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+                 <span className="text-gray-500 block text-[9px] uppercase">Used / Limit</span>
+                 <span className="font-bold text-gray-900 dark:text-white truncate block">
+                   {loadingBlobs ? '—' : `${formatBytes(blobStats.usedBytes)}`}
+                 </span>
+               </div>
+             </div>
           </div>
         </div>
       </div>
@@ -289,13 +307,13 @@ function AnalyticsViewer() {
 
         {/* Search Bar */}
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search signals by IP, path, city, country, browser, OS, ISP, or session ID..."
-            className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-white/10 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white text-xs font-mono focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
 
@@ -351,10 +369,10 @@ function AnalyticsViewer() {
 
           if (filteredVisits.length === 0) {
             return (
-              <div className="p-12 text-center text-gray-400 glass-md rounded-2xl border border-white/5 space-y-2">
-                <Activity className="w-8 h-8 text-gray-500 mx-auto" />
-                <div className="font-bold text-white text-sm">No Signal History Recorded</div>
-                <p className="text-xs text-gray-400">
+              <div className="p-12 text-center text-gray-500 dark:text-gray-400 glass-md rounded-2xl border border-gray-200 dark:border-white/5 space-y-2">
+                <Activity className="w-8 h-8 text-gray-400 dark:text-gray-500 mx-auto" />
+                <div className="font-bold text-gray-900 dark:text-white text-sm">No Signal History Recorded</div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {search ? 'No visitor signals match your search filter.' : 'Live visitor session signals will appear here.'}
                 </p>
               </div>
@@ -370,25 +388,25 @@ function AnalyticsViewer() {
                 return (
                   <div
                     key={visit.id}
-                    className="p-4 rounded-2xl bg-black/40 border border-white/10 hover:border-white/20 transition-all duration-200 space-y-3"
+                    className="p-4 rounded-2xl bg-white/80 dark:bg-black/40 border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 transition-all duration-200 space-y-3"
                   >
                     {/* Header Line */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
                           <span>{visit.path || '/'}</span>
                         </span>
 
-                        <span className="text-xs font-mono font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
                           {visit.duration || 0}s session
                         </span>
 
-                        <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-gray-500" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                           <span>{formatDateSafe(visit.startTime)} {formatTimeSafe(visit.startTime)}</span>
                           {relTime && (
-                            <span className="text-blue-400 font-semibold">({relTime})</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold">({relTime})</span>
                           )}
                         </span>
                       </div>
@@ -397,7 +415,7 @@ function AnalyticsViewer() {
                       <div className="flex items-center gap-2 self-end sm:self-auto">
                         <button
                           onClick={() => setExpandedVisitId(isExpanded ? null : (visit.id || ''))}
-                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-mono flex items-center gap-1 transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-mono flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <span>{isExpanded ? 'Less' : 'Inspect'}</span>
                           {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -409,7 +427,7 @@ function AnalyticsViewer() {
                               deleteDoc(doc(db, 'visits', visit.id!));
                             }
                           }}
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                          className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-red-500/15 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
                           title="Delete log entry"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -420,27 +438,27 @@ function AnalyticsViewer() {
                     {/* 4-Box Telemetry Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-xs">
                       {/* IP Address */}
-                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 flex items-center justify-between gap-2">
+                      <div className="p-2.5 bg-gray-50 dark:bg-black/60 rounded-xl border border-gray-200/80 dark:border-white/5 flex items-center justify-between gap-2">
                         <div className="truncate">
                           <div className="text-[10px] text-gray-500 uppercase">IP ADDRESS</div>
-                          <div className="text-blue-400 font-bold truncate mt-0.5">{cleanVal(visit.ip, 'Localhost / Unknown')}</div>
+                          <div className="text-blue-600 dark:text-blue-400 font-bold truncate mt-0.5">{cleanVal(visit.ip, 'Localhost / Unknown')}</div>
                         </div>
                         {visit.ip && (
                           <button
                             onClick={() => copyVal(`ip_${visit.id}`, visit.ip || '')}
-                            className="text-gray-400 hover:text-white transition-colors shrink-0 p-1"
+                            className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 p-1 cursor-pointer"
                             title="Copy IP"
                           >
-                            {copiedKey === `ip_${visit.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedKey === `ip_${visit.id}` ? <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         )}
                       </div>
 
                       {/* Location */}
-                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                      <div className="p-2.5 bg-gray-50 dark:bg-black/60 rounded-xl border border-gray-200/80 dark:border-white/5 truncate">
                         <div className="text-[10px] text-gray-500 uppercase">LOCATION</div>
-                        <div className="text-white font-semibold truncate mt-0.5 flex items-center gap-1">
-                          <Globe className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <div className="text-gray-900 dark:text-white font-semibold truncate mt-0.5 flex items-center gap-1">
+                          <Globe className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span className="truncate">
                             {[cleanVal(visit.city, ''), cleanVal(visit.countryCode || visit.country, '')].filter(Boolean).join(', ') || 'Localhost / Unknown'}
                           </span>
@@ -448,19 +466,19 @@ function AnalyticsViewer() {
                       </div>
 
                       {/* OS & Device */}
-                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                      <div className="p-2.5 bg-gray-50 dark:bg-black/60 rounded-xl border border-gray-200/80 dark:border-white/5 truncate">
                         <div className="text-[10px] text-gray-500 uppercase">DEVICE & OS</div>
-                        <div className="text-purple-300 font-semibold truncate mt-0.5 flex items-center gap-1">
+                        <div className="text-purple-700 dark:text-purple-300 font-semibold truncate mt-0.5 flex items-center gap-1">
                           {visit.deviceType === 'Mobile' ? <Smartphone className="w-3 h-3 shrink-0" /> : <Laptop className="w-3 h-3 shrink-0" />}
                           <span className="truncate">{cleanVal(visit.os, 'Unknown OS')} ({cleanVal(visit.deviceType, 'Desktop')})</span>
                         </div>
                       </div>
 
                       {/* Browser & ISP */}
-                      <div className="p-2.5 bg-black/60 rounded-xl border border-white/5 truncate">
+                      <div className="p-2.5 bg-gray-50 dark:bg-black/60 rounded-xl border border-gray-200/80 dark:border-white/5 truncate">
                         <div className="text-[10px] text-gray-500 uppercase">BROWSER & ISP</div>
-                        <div className="text-gray-200 font-semibold truncate mt-0.5">
-                          {cleanVal(visit.browser, 'Browser')} • <span className="text-gray-400">{cleanVal(visit.isp, 'Internal')}</span>
+                        <div className="text-gray-800 dark:text-gray-200 font-semibold truncate mt-0.5">
+                          {cleanVal(visit.browser, 'Browser')} • <span className="text-gray-500 dark:text-gray-400">{cleanVal(visit.isp, 'Internal')}</span>
                         </div>
                       </div>
                     </div>
@@ -471,9 +489,9 @@ function AnalyticsViewer() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-3 p-4 bg-black/80 rounded-xl border border-white/10 font-mono text-xs space-y-4 text-gray-300 overflow-x-auto"
+                        className="mt-3 p-4 bg-gray-100/90 dark:bg-black/80 rounded-xl border border-gray-200 dark:border-white/10 font-mono text-xs space-y-4 text-gray-700 dark:text-gray-300 overflow-x-auto"
                       >
-                        <div className="text-xs font-bold text-blue-400 flex items-center justify-between pb-1 border-b border-white/10">
+                        <div className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center justify-between pb-1 border-b border-gray-200 dark:border-white/10">
                           <div className="flex items-center gap-1.5">
                             <Terminal className="w-3.5 h-3.5" />
                             <span>Security Telemetry Log — Visit Session Signal</span>
@@ -484,8 +502,8 @@ function AnalyticsViewer() {
                         {/* Bento Grid keeping every single piece of information */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                           {/* Session Identity Card */}
-                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
-                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                          <div className="p-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/5 space-y-2">
+                            <div className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
                               <Activity className="w-3.5 h-3.5" />
                               <span>Session Identity</span>
                             </div>
@@ -493,51 +511,51 @@ function AnalyticsViewer() {
                               <div>
                                 <div className="text-gray-500 text-[10px] uppercase">Session ID</div>
                                 <div className="flex items-center justify-between gap-2 mt-0.5">
-                                  <span className="font-mono text-white break-all select-all">{visit.sessionId || 'N/A'}</span>
+                                  <span className="font-mono text-gray-900 dark:text-white break-all select-all">{visit.sessionId || 'N/A'}</span>
                                   {visit.sessionId && (
                                     <button
                                       onClick={() => copyVal(`sess_${visit.id}`, visit.sessionId || '')}
-                                      className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-all shrink-0"
+                                      className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all shrink-0 cursor-pointer"
                                       title="Copy Session ID"
                                     >
-                                      {copiedKey === `sess_${visit.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                      {copiedKey === `sess_${visit.id}` ? <Check className="w-3 h-3 text-emerald-500 dark:text-emerald-400" /> : <Copy className="w-3 h-3" />}
                                     </button>
                                   )}
                                 </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200 dark:border-white/5">
                                 <div>
                                   <div className="text-gray-500 text-[10px] uppercase">Total Duration</div>
-                                  <div className="font-bold text-emerald-400">{visit.duration || 0} seconds</div>
+                                  <div className="font-bold text-emerald-600 dark:text-emerald-400">{visit.duration || 0} seconds</div>
                                 </div>
                                 <div>
                                   <div className="text-gray-500 text-[10px] uppercase">Active Path</div>
-                                  <div className="font-bold text-blue-400 truncate" title={visit.path}>{visit.path || '/'}</div>
+                                  <div className="font-bold text-blue-600 dark:text-blue-400 truncate" title={visit.path}>{visit.path || '/'}</div>
                                 </div>
                               </div>
                               <div className="pt-1">
                                 <div className="text-gray-500 text-[10px] uppercase">Referrer Source</div>
-                                <div className="text-gray-300 truncate font-mono" title={visit.referrer}>{cleanVal(visit.referrer, 'Direct / Internal')}</div>
+                                <div className="text-gray-700 dark:text-gray-300 truncate font-mono" title={visit.referrer}>{cleanVal(visit.referrer, 'Direct / Internal')}</div>
                               </div>
                             </div>
                           </div>
 
                           {/* Timing Telemetry Card */}
-                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
-                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                          <div className="p-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/5 space-y-2">
+                            <div className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
                               <Clock className="w-3.5 h-3.5" />
                               <span>Timing Telemetry</span>
                             </div>
                             <div className="space-y-2 text-[11px]">
                               <div>
                                 <div className="text-gray-500 text-[10px] uppercase">Start Time</div>
-                                <div className="text-white font-mono">
+                                <div className="text-gray-900 dark:text-white font-mono">
                                   {visit.startTime ? `${formatDateSafe(visit.startTime)} at ${formatTimeSafe(visit.startTime)}` : 'N/A'}
                                 </div>
                               </div>
-                              <div className="pt-1.5 border-t border-white/5">
+                              <div className="pt-1.5 border-t border-gray-200 dark:border-white/5">
                                 <div className="text-gray-500 text-[10px] uppercase">Last Active (Heartbeat)</div>
-                                <div className="text-white font-mono">
+                                <div className="text-gray-900 dark:text-white font-mono">
                                   {visit.endTime ? `${formatDateSafe(visit.endTime)} at ${formatTimeSafe(visit.endTime)}` : 'N/A'}
                                 </div>
                               </div>
@@ -545,40 +563,40 @@ function AnalyticsViewer() {
                           </div>
 
                           {/* Geolocation & Network Card */}
-                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
-                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                          <div className="p-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/5 space-y-2">
+                            <div className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
                               <Globe className="w-3.5 h-3.5" />
                               <span>Geolocation & Network</span>
                             </div>
                             <div className="space-y-1.5 text-[11px]">
                               <div>
                                 <div className="text-gray-500 text-[10px] uppercase">IP Address</div>
-                                <div className="text-blue-400 font-bold">{cleanVal(visit.ip, 'Localhost / Intranet')}</div>
+                                <div className="text-blue-600 dark:text-blue-400 font-bold">{cleanVal(visit.ip, 'Localhost / Intranet')}</div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
+                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-200 dark:border-white/5">
                                 <div>
                                   <div className="text-gray-500 text-[10px] uppercase">City / Region</div>
-                                  <div className="text-white">
+                                  <div className="text-gray-900 dark:text-white">
                                     {cleanVal(visit.city, 'N/A')}{visit.region ? `, ${visit.region}` : ''}
                                   </div>
                                 </div>
                                 <div>
                                   <div className="text-gray-500 text-[10px] uppercase">Country</div>
-                                  <div className="text-white">
+                                  <div className="text-gray-900 dark:text-white">
                                     {cleanVal(visit.country, 'N/A')} {visit.countryCode ? `(${visit.countryCode})` : ''}
                                   </div>
                                 </div>
                               </div>
-                              <div className="pt-1 border-t border-white/5">
+                              <div className="pt-1 border-t border-gray-200 dark:border-white/5">
                                 <div className="text-gray-500 text-[10px] uppercase">Network Provider (ISP)</div>
-                                <div className="text-gray-300 truncate" title={visit.isp}>{cleanVal(visit.isp, 'Internal / Cloudflare')}</div>
+                                <div className="text-gray-700 dark:text-gray-300 truncate" title={visit.isp}>{cleanVal(visit.isp, 'Internal / Cloudflare')}</div>
                               </div>
                             </div>
                           </div>
 
                           {/* Client Platform Card */}
-                          <div className="p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-2">
-                            <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[11px] uppercase tracking-wider">
+                          <div className="p-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/5 space-y-2">
+                            <div className="flex items-center space-x-1.5 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
                               <Cpu className="w-3.5 h-3.5" />
                               <span>Client Platform</span>
                             </div>
@@ -586,34 +604,34 @@ function AnalyticsViewer() {
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <div className="text-gray-500 text-[10px] uppercase">Device Type</div>
-                                  <div className="text-white">{cleanVal(visit.deviceType, 'Desktop')}</div>
+                                  <div className="text-gray-900 dark:text-white">{cleanVal(visit.deviceType, 'Desktop')}</div>
                                 </div>
                                 <div>
                                   <div className="text-gray-500 text-[10px] uppercase">Operating System</div>
-                                  <div className="text-white">{cleanVal(visit.os, 'N/A')}</div>
+                                  <div className="text-gray-900 dark:text-white">{cleanVal(visit.os, 'N/A')}</div>
                                 </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
+                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-200 dark:border-white/5">
                                 <div>
                                   <div className="text-gray-500 text-[10px] uppercase">Browser</div>
-                                  <div className="text-white">{cleanVal(visit.browser, 'N/A')}</div>
+                                  <div className="text-gray-900 dark:text-white">{cleanVal(visit.browser, 'N/A')}</div>
                                 </div>
                                 <div>
                                   <div className="text-gray-500 text-[10px] uppercase">Screen Frame</div>
-                                  <div className="text-white font-mono">{cleanVal(visit.screenResolution, 'N/A')}</div>
+                                  <div className="text-gray-900 dark:text-white font-mono">{cleanVal(visit.screenResolution, 'N/A')}</div>
                                 </div>
                               </div>
-                              <div className="pt-1 border-t border-white/5">
+                              <div className="pt-1 border-t border-gray-200 dark:border-white/5">
                                 <div className="text-gray-500 text-[10px] uppercase">Language</div>
-                                <div className="text-white font-mono">{cleanVal(visit.language, 'N/A')}</div>
+                                <div className="text-gray-900 dark:text-white font-mono">{cleanVal(visit.language, 'N/A')}</div>
                               </div>
                             </div>
                           </div>
 
                           {/* Raw User Agent Header */}
-                          <div className="md:col-span-2 p-3.5 rounded-xl bg-black/50 border border-white/5 space-y-1">
+                          <div className="md:col-span-2 p-3.5 rounded-xl bg-white dark:bg-black/50 border border-gray-200 dark:border-white/5 space-y-1">
                             <div className="text-gray-500 text-[10px] uppercase">Raw User Agent Header</div>
-                            <div className="text-[11px] font-mono text-gray-400 break-all leading-relaxed bg-black/90 p-2.5 rounded-lg border border-white/5 select-all">
+                            <div className="text-[11px] font-mono text-gray-700 dark:text-gray-400 break-all leading-relaxed bg-gray-100 dark:bg-black/90 p-2.5 rounded-lg border border-gray-200 dark:border-white/5 select-all">
                               {visit.userAgent || 'N/A'}
                             </div>
                           </div>
@@ -652,20 +670,20 @@ function MessageEditor() {
           </div>
         ) : (
           items.map(msg => (
-            <div key={msg.id} className="glass-sm p-6 rounded-2xl flex items-center justify-between group">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <h4 className="font-bold text-lg">{msg.name}</h4>
+            <div key={msg.id} className="glass-sm p-4 sm:p-6 rounded-2xl flex items-center justify-between gap-3 group">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <h4 className="font-bold text-base sm:text-lg truncate">{msg.name}</h4>
                   <span className="text-[10px] text-gray-400 font-mono">{new Date(msg.timestamp).toLocaleString()}</span>
                 </div>
-                <p className="text-sm text-blue-500">{msg.email}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-1">{msg.message}</p>
+                <p className="text-sm text-blue-500 truncate">{msg.email}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-1">{msg.message}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <button onClick={() => setSelected(msg)} className="p-2 hover:bg-blue-500/10 text-blue-500 rounded-lg">
+              <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                <button onClick={() => setSelected(msg)} className="p-2 hover:bg-blue-500/10 text-blue-500 rounded-lg cursor-pointer" title="View message">
                   <ChevronRight className="w-5 h-5" />
                 </button>
-                <button onClick={() => deleteDoc(doc(db, 'messages', msg.id!))} className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg">
+                <button onClick={() => deleteDoc(doc(db, 'messages', msg.id!))} className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg cursor-pointer" title="Delete message">
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
@@ -674,17 +692,17 @@ function MessageEditor() {
         ))}
       </div>
       {selected && (
-        <Modal title="Signal Details" onClose={() => setSelected(null)} onSave={() => setSelected(null)}>
-          <div className="glass-sm p-6 rounded-3xl space-y-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="text-2xl font-black uppercase tracking-tight">{selected.name}</h4>
-                <p className="text-blue-500 font-mono text-sm">{selected.email}</p>
+        <Modal title="Signal Details" onClose={() => setSelected(null)} readOnly>
+          <div className="glass-sm p-5 sm:p-6 rounded-3xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+              <div className="min-w-0">
+                <h4 className="text-xl sm:text-2xl font-black uppercase tracking-tight break-words">{selected.name}</h4>
+                <p className="text-blue-500 font-mono text-sm break-all">{selected.email}</p>
               </div>
-              <p className="text-[10px] text-gray-400 font-mono">{new Date(selected.timestamp).toLocaleString()}</p>
+              <p className="text-[10px] text-gray-400 font-mono shrink-0">{new Date(selected.timestamp).toLocaleString()}</p>
             </div>
-            <div className="h-px bg-white/10" />
-            <p className="whitespace-pre-wrap text-lg leading-relaxed">{selected.message}</p>
+            <div className="h-px bg-gray-200 dark:bg-white/10" />
+            <p className="whitespace-pre-wrap text-base sm:text-lg leading-relaxed break-words">{selected.message}</p>
           </div>
         </Modal>
       )}
@@ -864,7 +882,7 @@ function ExperienceEditor() {
             <div className="md:col-span-2">
               <label className="block text-sm font-bold mb-2">Bullets (one per line)</label>
               <textarea 
-                className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 font-sans text-sm text-[#1D1D1F] dark:text-[#F5F5F7] bg-white/5" 
+                className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 font-sans text-sm text-[#1D1D1F] dark:text-[#F5F5F7] bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10" 
                 rows={5}
                 value={editing.bullets?.join('\n') || ''}
                 onChange={e => setEditing({...editing, bullets: e.target.value.split('\n')})}
@@ -879,7 +897,7 @@ function ExperienceEditor() {
                 targetId={editing.id || 'new'}
               />
             </div>
-            <div className="grid grid-cols-2 gap-2 md:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:col-span-2">
               <Input label="Link URL" value={editing.link?.url || ''} onChange={v => setEditing({...editing, link: { ...editing.link!, url: v, text: editing.link?.text || 'Visit' }})} />
               <Input label="Link Text" value={editing.link?.text || ''} onChange={v => setEditing({...editing, link: { ...editing.link!, text: v, url: editing.link?.url || '' }})} />
             </div>
@@ -1072,9 +1090,9 @@ function ProjectVideoUpload({
   const hasAnyVideoData = Boolean(activeVideo || videoThumbnail);
 
   return (
-    <div className="space-y-4 p-5 rounded-2xl glass-sm border border-white/5 bg-white/[0.02]">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-bold uppercase tracking-widest text-blue-400 flex items-center gap-2">
+    <div className="space-y-4 p-5 rounded-2xl glass-sm border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <label className="text-xs font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400 flex items-center gap-2">
           <Video className="w-4 h-4" />
           <span>Project Video & Thumbnail</span>
         </label>
@@ -1094,10 +1112,10 @@ function ProjectVideoUpload({
         {/* Upload file or enter URL */}
         <div className="space-y-3">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1">
+            <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1">
               Upload Video File (MP4, WebM, MOV — Max 6MB for direct upload)
             </label>
-            <label className="flex items-center justify-center p-3 rounded-xl border border-dashed border-gray-300 dark:border-white/10 hover:border-blue-500/50 cursor-pointer bg-white/5 hover:bg-blue-500/5 transition-all text-xs font-bold text-gray-700 dark:text-gray-300">
+            <label className="flex items-center justify-center p-3 rounded-xl border border-dashed border-gray-300 dark:border-white/10 hover:border-blue-500/50 cursor-pointer bg-white/70 dark:bg-white/5 hover:bg-blue-500/5 transition-all text-xs font-bold text-gray-700 dark:text-gray-300">
               <input
                 type="file"
                 accept="video/*,.mp4,.webm,.mov,.ogg,.m4v"
@@ -1350,13 +1368,13 @@ function ProjectEditor() {
             <Input label="Tech Stack (comma separated)" value={editing.technologies.join(',')} onChange={v => setEditing({...editing, technologies: v.split(',').map(s => s.trim())})} />
             <Input label="Order (Position Index)" value={editing.order !== undefined ? editing.order.toString() : ''} onChange={v => setEditing({...editing, order: parseInt(v) || 0})} />
             
-            <div className="flex items-center space-x-3 p-4 glass-sm rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
+            <div className="flex items-center space-x-3 p-4 glass-sm rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
               <input 
                 id="proj-inprogress-checkbox"
                 type="checkbox" 
                 checked={editing.inProgress || false} 
                 onChange={e => setEditing({...editing, inProgress: e.target.checked})}
-                className="w-5 h-5 rounded border-white/10 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
+                className="w-5 h-5 rounded border-gray-300 dark:border-white/10 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
               />
               <label htmlFor="proj-inprogress-checkbox" className="text-sm font-semibold select-none cursor-pointer text-[#1D1D1F] dark:text-[#F5F5F7]">
                 Mark as In Progress (Displays a dim overlay with "In Progress")
@@ -1377,7 +1395,7 @@ function ProjectEditor() {
               path="projects"
               targetId={editing.id || 'new'}
             />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Input label="Live Link URL" value={editing.link?.url || ''} onChange={v => setEditing({...editing, link: { ...editing.link!, url: v, text: editing.link?.text || 'Live Demo' }})} />
               <Input label="Live Link Text" value={editing.link?.text || ''} onChange={v => setEditing({...editing, link: { ...editing.link!, text: v, url: editing.link?.url || '' }})} />
             </div>
@@ -1392,11 +1410,67 @@ function ProjectEditor() {
 function CertificateEditor() {
   const [items, setItems] = useState<Certificate[]>([]);
   const [editing, setEditing] = useState<Certificate | null>(null);
+  const [generatingThumb, setGeneratingThumb] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+  const [statusNote, setStatusNote] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, 'certificates'), orderBy('order', 'asc'));
     return onSnapshot(q, (s) => setItems(s.docs.map(d => ({id: d.id, ...d.data()} as Certificate))), (error) => handleFirestoreError(error, OperationType.GET, 'certificates'));
   }, []);
+
+  const certsMissingThumb = items.filter((item) => {
+    const hasRaster = (item.images || (item.imageUrl ? [item.imageUrl] : [])).some(isRasterImageUrl);
+    return hasRaster && !(item.thumbnailUrl || '').trim();
+  });
+
+  const handleBatchGenerateThumbnails = async () => {
+    if (certsMissingThumb.length === 0 || batchProgress) return;
+    setBatchProgress({ current: 0, total: certsMissingThumb.length });
+    setStatusNote(null);
+
+    let successCount = 0;
+    for (let i = 0; i < certsMissingThumb.length; i++) {
+      const cert = certsMissingThumb[i];
+      setBatchProgress({ current: i + 1, total: certsMissingThumb.length });
+      try {
+        const allImgs = cert.images && cert.images.length > 0 ? cert.images : (cert.imageUrl ? [cert.imageUrl] : []);
+        const primaryRaster = allImgs.find(isRasterImageUrl);
+        if (!primaryRaster || !cert.id) continue;
+
+        const thumbUrl = await generateAndUploadThumbnail(primaryRaster, 'certificates', cert.id);
+        if (thumbUrl) {
+          await updateDoc(doc(db, 'certificates', cert.id), { thumbnailUrl: thumbUrl });
+          successCount++;
+        }
+      } catch (err) {
+        console.warn(`Thumbnail batch error for ${cert.name}:`, err);
+      }
+    }
+
+    setBatchProgress(null);
+    setStatusNote(`Generated fast WebP thumbnails for ${successCount} of ${certsMissingThumb.length} certificate(s).`);
+    setTimeout(() => setStatusNote(null), 5000);
+  };
+
+  const handleGenerateEditingThumbnail = async (sourceOverride?: File | string) => {
+    if (!editing) return;
+    const allImgs = editing.images && editing.images.length > 0 ? editing.images : (editing.imageUrl ? [editing.imageUrl] : []);
+    const targetSource = sourceOverride || allImgs.find(isRasterImageUrl);
+    if (!targetSource) return;
+
+    setGeneratingThumb(true);
+    try {
+      const thumbUrl = await generateAndUploadThumbnail(targetSource, 'certificates', editing.id || 'new');
+      if (thumbUrl) {
+        setEditing(prev => prev ? { ...prev, thumbnailUrl: thumbUrl } : null);
+      }
+    } catch (err) {
+      console.error('Thumbnail generation error:', err);
+    } finally {
+      setGeneratingThumb(false);
+    }
+  };
 
   const handleMove = async (index: number, direction: 'up' | 'down') => {
     if (direction === 'up' && index === 0) return;
@@ -1430,26 +1504,73 @@ function CertificateEditor() {
     e.preventDefault();
     if (!editing) return;
     const { id, ...data } = editing;
-    if (id) await updateDoc(doc(db, 'certificates', id), data);
-    else await addDoc(collection(db, 'certificates'), data);
+    const cleanData = {
+      ...data,
+      thumbnailUrl: (editing.thumbnailUrl || '').trim(),
+    };
+    if (id) await updateDoc(doc(db, 'certificates', id), cleanData);
+    else await addDoc(collection(db, 'certificates'), cleanData);
     setEditing(null);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Certificates</h2>
-        <button className="btn-secondary" onClick={() => setEditing({ name: '', issuer: '', date: '', order: items.length, images: [], worth: 0, inProgress: false, description: '' })}>
-          <Plus className="w-5 h-5 mr-2" /> Add
-        </button>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Certificates</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Lightweight thumbnails load first on cards; clicking opens full-resolution scans.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {certsMissingThumb.length > 0 && (
+            <button
+              type="button"
+              disabled={Boolean(batchProgress)}
+              onClick={handleBatchGenerateThumbnails}
+              className="px-4 py-2 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {batchProgress ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Optimizing ({batchProgress.current}/{batchProgress.total})</span>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="w-4 h-4" />
+                  <span>Generate Missing Thumbnails ({certsMissingThumb.length})</span>
+                </>
+              )}
+            </button>
+          )}
+          <button
+            className="btn-secondary cursor-pointer"
+            onClick={() => setEditing({ name: '', issuer: '', date: '', order: items.length, images: [], thumbnailUrl: '', worth: 0, inProgress: false, description: '' })}
+          >
+            <Plus className="w-5 h-5 mr-2" /> Add
+          </button>
+        </div>
       </div>
+
+      {statusNote && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          <span>{statusNote}</span>
+        </div>
+      )}
+
       <div className="space-y-4">
         {items.map((item, index) => (
           <ListItem 
             key={item.id} 
             title={item.name} 
-            subtitle={item.issuer + (item.worth ? ` - Worth: $${item.worth}` : '') + (item.inProgress ? ' (In Progress)' : '')} 
-            imageUrl={item.images?.[0] || item.imageUrl} 
+            subtitle={
+              item.issuer +
+              (item.worth ? ` - Worth: $${item.worth}` : '') +
+              (item.inProgress ? ' (In Progress)' : '') +
+              (item.thumbnailUrl ? ' • [Fast Thumb Ready]' : ' • [No Thumb]')
+            } 
+            imageUrl={item.thumbnailUrl || item.images?.[0] || item.imageUrl} 
             onEdit={() => setEditing(item)} 
             onDelete={() => deleteDoc(doc(db, 'certificates', item.id!))}
             onMoveUp={() => handleMove(index, 'up')}
@@ -1476,13 +1597,13 @@ function CertificateEditor() {
               textarea 
             />
             
-            <div className="flex items-center space-x-3 p-4 glass-sm rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
+            <div className="flex items-center space-x-3 p-4 glass-sm rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
               <input 
                 id="cert-inprogress-checkbox"
                 type="checkbox" 
                 checked={editing.inProgress || false} 
                 onChange={e => setEditing({...editing, inProgress: e.target.checked})}
-                className="w-5 h-5 rounded border-white/10 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
+                className="w-5 h-5 rounded border-gray-300 dark:border-white/10 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
               />
               <label htmlFor="cert-inprogress-checkbox" className="text-sm font-semibold select-none cursor-pointer text-[#1D1D1F] dark:text-[#F5F5F7]">
                 Mark as In Progress (Displays a dim overlay with "In Progress")
@@ -1492,11 +1613,58 @@ function CertificateEditor() {
             <MultiImageUpload 
               label="Certificate & Badge Images" 
               images={editing.images || []}
-              onChange={imgs => setEditing({...editing, images: imgs})}
+              onChange={imgs => setEditing(prev => prev ? {...prev, images: imgs} : null)}
+              onImageUploaded={(file) => {
+                if (!editing.thumbnailUrl) {
+                  handleGenerateEditingThumbnail(file);
+                }
+              }}
               path="certificates"
               targetId={editing.id || 'new'}
             />
-            <div className="grid grid-cols-2 gap-2">
+
+            {/* Certificate Thumbnail Controls */}
+            <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/[0.02] space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                  Card Thumbnail (Fast Loading)
+                </label>
+                <div className="flex items-center gap-2">
+                  {(editing.images || []).some(isRasterImageUrl) && (
+                    <button
+                      type="button"
+                      disabled={generatingThumb}
+                      onClick={() => handleGenerateEditingThumbnail()}
+                      className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {generatingThumb ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Generating...</span></>
+                      ) : (
+                        <><ImageIcon className="w-3.5 h-3.5" /><span>Auto-Generate</span></>
+                      )}
+                    </button>
+                  )}
+                  {editing.thumbnailUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditing({...editing, thumbnailUrl: ''})}
+                      className="px-2.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+              <ImageUpload
+                label="Thumbnail Preview (Auto-created in WebP on upload, or upload custom)"
+                value={editing.thumbnailUrl || ''}
+                onChange={v => setEditing({...editing, thumbnailUrl: v})}
+                path="certificates_thumb"
+                targetId={editing.id || 'new'}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Input label="Link URL" value={editing.link?.url || ''} onChange={v => setEditing({...editing, link: { ...editing.link!, url: v, text: editing.link?.text || 'Verify' }})} />
               <Input label="Link Text" value={editing.link?.text || ''} onChange={v => setEditing({...editing, link: { ...editing.link!, text: v, url: editing.link?.url || '' }})} />
             </div>
@@ -1555,9 +1723,9 @@ function BlogEditor() {
               targetId={editing.id || 'new'}
             />
             <div className="space-y-1">
-              <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">Status</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Status</label>
               <select 
-                className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 text-gray-900 dark:text-white bg-white dark:bg-[#09090b]"
                 value={editing.status}
                 onChange={e => setEditing({...editing, status: e.target.value as any})}
               >
@@ -1697,12 +1865,12 @@ function AppSettingsEditor() {
             <h3 className="text-xl font-bold flex items-center"><Settings className="mr-2 w-5 h-5" /> Website Configuration</h3>
             <Input label="Site Name" value={settings.siteName || 'Portfolio'} onChange={v => setSettings({...settings, siteName: v})} />
             <Input label="Maintenance Message" value={settings.maintenanceMessage || ''} onChange={v => setSettings({...settings, maintenanceMessage: v})} />
-            <div className="flex items-center space-x-4 p-4 glass-sm rounded-xl">
+            <div className="flex items-center space-x-4 p-4 glass-sm rounded-xl border border-gray-200 dark:border-white/10">
                <input 
                 type="checkbox" 
                 checked={settings.maintenanceMode || false} 
                 onChange={e => setSettings({...settings, maintenanceMode: e.target.checked})}
-                className="w-5 h-5"
+                className="w-5 h-5 cursor-pointer"
                 id="maintenance-mode-setting"
                />
                <label htmlFor="maintenance-mode-setting" className="text-sm font-bold cursor-pointer select-none">
@@ -1711,17 +1879,17 @@ function AppSettingsEditor() {
             </div>
             <p className="text-[10px] text-gray-500 uppercase font-mono">Restricts write access to public forms.</p>
 
-            <div className="flex items-center space-x-4 p-4 glass-sm rounded-xl border border-blue-500/10 bg-blue-500/[0.02]">
+            <div className="flex items-center space-x-4 p-4 glass-sm rounded-xl border border-blue-500/20 bg-blue-500/[0.03]">
                <input 
                 type="checkbox" 
                 id="show-video-thumbnail-setting"
                 checked={settings.showVideoThumbnailAsProjectImage || false} 
                 onChange={e => setSettings({...settings, showVideoThumbnailAsProjectImage: e.target.checked})}
-                className="w-5 h-5 rounded border-white/10 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
+                className="w-5 h-5 rounded border-gray-300 dark:border-white/10 text-blue-500 focus:ring-blue-500/30 cursor-pointer"
                />
                <div>
                  <label htmlFor="show-video-thumbnail-setting" className="text-sm font-bold cursor-pointer select-none flex items-center gap-1.5">
-                   <Video className="w-4 h-4 text-blue-400" />
+                   <Video className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                    <span>Show Video Thumbnail as Project Picture</span>
                  </label>
                  <p className="text-[10px] text-gray-500 uppercase font-mono mt-0.5">
@@ -1729,13 +1897,32 @@ function AppSettingsEditor() {
                  </p>
                </div>
             </div>
+
+            <div className="flex items-center space-x-4 p-4 glass-sm rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03]">
+               <input 
+                type="checkbox" 
+                id="show-terminal-entrance-setting"
+                checked={settings.showTerminalEntrance !== false} 
+                onChange={e => setSettings({...settings, showTerminalEntrance: e.target.checked})}
+                className="w-5 h-5 rounded border-gray-300 dark:border-white/10 text-emerald-500 focus:ring-emerald-500/30 cursor-pointer"
+               />
+               <div>
+                 <label htmlFor="show-terminal-entrance-setting" className="text-sm font-bold cursor-pointer select-none flex items-center gap-1.5">
+                   <Terminal className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                   <span>Show Terminal Entrance Screen</span>
+                 </label>
+                 <p className="text-[10px] text-gray-500 uppercase font-mono mt-0.5">
+                   When enabled, visitors see the interactive terminal startup screen on load before entering the portfolio.
+                 </p>
+               </div>
+            </div>
           </div>
         </div>
 
         {/* Social Preview Settings */}
-        <div className="pt-8 border-t border-white/5 space-y-6">
+        <div className="pt-8 border-t border-gray-200 dark:border-white/5 space-y-6">
           <div className="space-y-2">
-            <h3 className="text-xl font-bold flex items-center">
+            <h3 className="text-xl font-bold flex items-center text-gray-900 dark:text-white">
               <Globe className="mr-2 w-5 h-5 text-blue-500" /> Social Media & Search Engine Preview (Open Graph)
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -1743,7 +1930,7 @@ function AppSettingsEditor() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6 sm:p-8 glass-sm rounded-3xl border border-gray-200 dark:border-white/5 bg-gray-50/60 dark:bg-white/[0.02]">
             <div className="space-y-6">
               <Input 
                 label="Preview Title (e.g. Abdulrahman Kamal | Portfolio)" 
@@ -1769,18 +1956,18 @@ function AppSettingsEditor() {
               
               {/* Educational Guide Card */}
               <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center">
-                  💡 Crawler and Link Preview Guide
+                <h4 className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center">
+                  Crawler and Link Preview Guide
                 </h4>
-                <ul className="text-[10.5px] text-gray-400 space-y-2 list-disc pl-4 leading-relaxed">
+                <ul className="text-[11px] text-gray-600 dark:text-gray-400 space-y-2 list-disc pl-4 leading-relaxed">
                   <li>
-                    <strong className="text-white">LinkedIn Caching:</strong> LinkedIn caches link previews aggressively. If you update your preview details but don't see the changes, visit the <a href="https://www.linkedin.com/post-inspector/" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">LinkedIn Post Inspector</a> to force LinkedIn's crawler to scrape your site immediately and clear the cache.
+                    <strong className="text-gray-900 dark:text-white">LinkedIn Caching:</strong> LinkedIn caches link previews aggressively. If you update your preview details but don't see the changes, visit the <a href="https://www.linkedin.com/post-inspector/" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">LinkedIn Post Inspector</a> to force LinkedIn's crawler to scrape your site immediately and clear the cache.
                   </li>
                   <li>
-                    <strong className="text-white">Image Formats:</strong> A 1.91:1 aspect ratio (recommended 1200x630 pixels, max 2MB) is standard to ensure beautiful, non-cropped display cards across all platforms.
+                    <strong className="text-gray-900 dark:text-white">Image Formats:</strong> A 1.91:1 aspect ratio (recommended 1200x630 pixels, max 2MB) is standard to ensure beautiful, non-cropped display cards across all platforms.
                   </li>
                   <li>
-                    <strong className="text-white">LinkedIn URL Shortening:</strong> When posting, LinkedIn always wraps link URLs in their own shortened tracker links (<code className="text-blue-300">lnkd.in</code>). Anyone clicking it will be redirected directly to your website.
+                    <strong className="text-gray-900 dark:text-white">LinkedIn URL Shortening:</strong> When posting, LinkedIn always wraps link URLs in their own shortened tracker links (<code className="text-blue-600 dark:text-blue-300">lnkd.in</code>). Anyone clicking it will be redirected directly to your website.
                   </li>
                 </ul>
               </div>
@@ -1789,7 +1976,7 @@ function AppSettingsEditor() {
         </div>
 
         {/* Section Subtitles / Intros */}
-        <div className="pt-8 border-t border-white/5 space-y-6">
+        <div className="pt-8 border-t border-gray-200 dark:border-white/5 space-y-6">
           <div className="space-y-2">
             <h3 className="text-xl font-bold flex items-center">
               <BookOpen className="mr-2 w-5 h-5 text-blue-500" /> Section Descriptions & Intros
@@ -1798,7 +1985,7 @@ function AppSettingsEditor() {
               Customize the introductory subtitles displayed at the top of each page/section of your website. Leave a field blank to use its default subtitle.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 sm:p-6 glass-sm rounded-3xl border border-gray-200 dark:border-white/5 bg-gray-50/70 dark:bg-white/[0.02]">
             <Input 
               label="Experience Section Intro" 
               value={settings.experienceSubtitle || ''} 
@@ -1834,294 +2021,71 @@ function AppSettingsEditor() {
           </div>
         </div>
 
-        {/* Dynamic Navigation Order Managers */}
-        <div className="pt-8 border-t border-white/5 space-y-8">
+        {/* Unified Navigation Order Manager */}
+        <div className="pt-8 border-t border-gray-200 dark:border-white/5 space-y-6">
           <div className="space-y-2">
             <h3 className="text-xl font-bold flex items-center">
-              <Settings className="mr-2 w-5 h-5 text-blue-500" /> Navigation Order Management
+              <Settings className="mr-2 w-5 h-5 text-blue-500" /> Navigation Bar Link Order (Desktop & Mobile)
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Configure which pages are visible and the exact order they appear in both the Computer / Desktop navbar and the Mobile navigation bar.
+              Reorder the navigation links shown in the desktop top bar, mobile floating dock, and About explore grid.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Desktop Order Controller */}
-            <div className="space-y-4 p-6 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
-              <h4 className="text-sm font-black uppercase tracking-widest text-blue-500">
-                Computer / Desktop Navigation Bar Links
-              </h4>
-              <p className="text-xs text-gray-400">Reorder the core menu links on the desktop view.</p>
-              
-              <div className="space-y-2">
-                {(() => {
-                  const order = settings.desktopNavOrder && settings.desktopNavOrder.length > 0
-                    ? settings.desktopNavOrder
-                    : ['about', 'blog', 'experience', 'projects', 'certificates', 'skills', 'contact'];
+          <div className="max-w-2xl space-y-4 p-5 sm:p-6 glass-sm rounded-3xl border border-gray-200 dark:border-white/5 bg-gray-50/70 dark:bg-white/[0.02]">
+            <div className="space-y-2">
+              {(() => {
+                const order = settings.desktopNavOrder && settings.desktopNavOrder.length > 0
+                  ? settings.desktopNavOrder
+                  : ['about', 'blog', 'experience', 'projects', 'certificates', 'skills', 'contact'];
 
-                  const handleMove = (index: number, direction: 'up' | 'down') => {
-                    const newOrder = [...order];
-                    if (direction === 'up' && index > 0) {
-                      const temp = newOrder[index];
-                      newOrder[index] = newOrder[index - 1];
-                      newOrder[index - 1] = temp;
-                    } else if (direction === 'down' && index < newOrder.length - 1) {
-                      const temp = newOrder[index];
-                      newOrder[index] = newOrder[index + 1];
-                      newOrder[index + 1] = temp;
-                    }
-                    setSettings({ ...settings, desktopNavOrder: newOrder });
-                  };
+                const handleMove = (index: number, direction: 'up' | 'down') => {
+                  const newOrder = [...order];
+                  if (direction === 'up' && index > 0) {
+                    const temp = newOrder[index];
+                    newOrder[index] = newOrder[index - 1];
+                    newOrder[index - 1] = temp;
+                  } else if (direction === 'down' && index < newOrder.length - 1) {
+                    const temp = newOrder[index];
+                    newOrder[index] = newOrder[index + 1];
+                    newOrder[index + 1] = temp;
+                  }
+                  setSettings({ ...settings, desktopNavOrder: newOrder });
+                };
 
-                  return order.map((key, i) => {
-                    const meta = SECTIONS_METADATA.find(m => m.key === key);
-                    if (!meta) return null;
-                    const IconComp = meta.icon;
+                return order.map((key, i) => {
+                  const meta = SECTIONS_METADATA.find(m => m.key === key);
+                  if (!meta) return null;
+                  const IconComp = meta.icon;
 
-                    return (
-                      <div key={key} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                        <div className="flex items-center space-x-3">
-                          <IconComp className="w-4 h-4 text-blue-400" />
-                          <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{meta.label}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <button
-                            type="button"
-                            disabled={i === 0}
-                            onClick={() => handleMove(i, 'up')}
-                            className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-blue-400 font-bold disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-transform"
-                          >
-                            ▲
-                          </button>
-                          <button
-                            type="button"
-                            disabled={i === order.length - 1}
-                            onClick={() => handleMove(i, 'down')}
-                            className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-blue-400 font-bold disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-transform"
-                          >
-                            ▼
-                          </button>
-                        </div>
+                  return (
+                    <div key={key} className="flex items-center justify-between p-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-2xl">
+                      <div className="flex items-center space-x-3">
+                        <IconComp className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                        <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{meta.label}</span>
                       </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-
-            {/* Mobile Navigation Controller */}
-            <div className="space-y-6">
-              {/* Primary Mobile Nav (Bottom Bar) */}
-              <div className="space-y-4 p-6 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
-                <h4 className="text-sm font-black uppercase tracking-widest text-emerald-500">
-                  Mobile Bottom Bar Items (Primary)
-                </h4>
-                <p className="text-xs text-gray-400">Items displayed directly in the bottom navigation bar on mobile phones.</p>
-
-                <div className="space-y-2">
-                  {(() => {
-                    const primary = settings.mobilePrimaryNav && settings.mobilePrimaryNav.length > 0
-                      ? settings.mobilePrimaryNav
-                      : ['about', 'experience', 'projects', 'certificates'];
-
-                    const secondary = settings.mobileSecondaryNav && settings.mobileSecondaryNav.length > 0
-                      ? settings.mobileSecondaryNav
-                      : ['skills', 'blog', 'contact'];
-
-                    const moveItem = (key: string, to: 'primary' | 'secondary') => {
-                      let nextPrimary = [...primary];
-                      let nextSecondary = [...secondary];
-
-                      if (to === 'secondary') {
-                        nextPrimary = nextPrimary.filter(k => k !== key);
-                        if (!nextSecondary.includes(key)) {
-                          nextSecondary.push(key);
-                        }
-                      } else {
-                        nextSecondary = nextSecondary.filter(k => k !== key);
-                        if (!nextPrimary.includes(key)) {
-                          nextPrimary.push(key);
-                        }
-                      }
-
-                      setSettings({
-                        ...settings,
-                        mobilePrimaryNav: nextPrimary,
-                        mobileSecondaryNav: nextSecondary
-                      });
-                    };
-
-                    const handleMoveOrder = (index: number, direction: 'up' | 'down') => {
-                      const newPrimary = [...primary];
-                      if (direction === 'up' && index > 0) {
-                        const temp = newPrimary[index];
-                        newPrimary[index] = newPrimary[index - 1];
-                        newPrimary[index - 1] = temp;
-                      } else if (direction === 'down' && index < newPrimary.length - 1) {
-                        const temp = newPrimary[index];
-                        newPrimary[index] = newPrimary[index + 1];
-                        newPrimary[index + 1] = temp;
-                      }
-                      setSettings({ ...settings, mobilePrimaryNav: newPrimary });
-                    };
-
-                    return (
-                      <>
-                        {primary.map((key, i) => {
-                          const meta = SECTIONS_METADATA.find(m => m.key === key);
-                          if (!meta) return null;
-                          const IconComp = meta.icon;
-
-                          return (
-                            <div key={key} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                              <div className="flex items-center space-x-3">
-                                <IconComp className="w-4 h-4 text-emerald-500" />
-                                <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{meta.label}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex items-center space-x-1">
-                                  <button
-                                    type="button"
-                                    disabled={i === 0}
-                                    onClick={() => handleMoveOrder(i, 'up')}
-                                    className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-emerald-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
-                                  >
-                                    ▲
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={i === primary.length - 1}
-                                    onClick={() => handleMoveOrder(i, 'down')}
-                                    className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-emerald-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
-                                  >
-                                    ▼
-                                  </button>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => moveItem(key, 'secondary')}
-                                  className="text-[10px] uppercase font-black tracking-wider text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded-lg transition-colors"
-                                >
-                                  Move To Drawer
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {primary.length === 0 && (
-                          <p className="text-xs text-center py-4 text-gray-500">No items. Move some from the Drawer below!</p>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Secondary Mobile Nav (Drawer / More menu) */}
-              <div className="space-y-4 p-6 glass-sm rounded-3xl border border-white/5 bg-white/[0.02]">
-                <h4 className="text-sm font-black uppercase tracking-widest text-rose-500">
-                  Mobile "More..." Drawer Items (Secondary)
-                </h4>
-                <p className="text-xs text-gray-400">Items organized inside the slide-up "More" options list drawer on mobile screens.</p>
-
-                <div className="space-y-2">
-                  {(() => {
-                    const primary = settings.mobilePrimaryNav && settings.mobilePrimaryNav.length > 0
-                      ? settings.mobilePrimaryNav
-                      : ['about', 'experience', 'projects', 'certificates'];
-
-                    const secondary = settings.mobileSecondaryNav && settings.mobileSecondaryNav.length > 0
-                      ? settings.mobileSecondaryNav
-                      : ['skills', 'blog', 'contact'];
-
-                    const moveItem = (key: string, to: 'primary' | 'secondary') => {
-                      let nextPrimary = [...primary];
-                      let nextSecondary = [...secondary];
-
-                      if (to === 'secondary') {
-                        nextPrimary = nextPrimary.filter(k => k !== key);
-                        if (!nextSecondary.includes(key)) {
-                          nextSecondary.push(key);
-                        }
-                      } else {
-                        nextSecondary = nextSecondary.filter(k => k !== key);
-                        if (!nextPrimary.includes(key)) {
-                          nextPrimary.push(key);
-                        }
-                      }
-
-                      setSettings({
-                        ...settings,
-                        mobilePrimaryNav: nextPrimary,
-                        mobileSecondaryNav: nextSecondary
-                      });
-                    };
-
-                    const handleMoveOrder = (index: number, direction: 'up' | 'down') => {
-                      const newSecondary = [...secondary];
-                      if (direction === 'up' && index > 0) {
-                        const temp = newSecondary[index];
-                        newSecondary[index] = newSecondary[index - 1];
-                        newSecondary[index - 1] = temp;
-                      } else if (direction === 'down' && index < newSecondary.length - 1) {
-                        const temp = newSecondary[index];
-                        newSecondary[index] = newSecondary[index + 1];
-                        newSecondary[index + 1] = temp;
-                      }
-                      setSettings({ ...settings, mobileSecondaryNav: newSecondary });
-                    };
-
-                    return (
-                      <>
-                        {secondary.map((key, i) => {
-                          const meta = SECTIONS_METADATA.find(m => m.key === key);
-                          if (!meta) return null;
-                          const IconComp = meta.icon;
-
-                          return (
-                            <div key={key} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                              <div className="flex items-center space-x-3">
-                                <IconComp className="w-4 h-4 text-rose-500" />
-                                <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{meta.label}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex items-center space-x-1">
-                                  <button
-                                    type="button"
-                                    disabled={i === 0}
-                                    onClick={() => handleMoveOrder(i, 'up')}
-                                    className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-rose-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
-                                  >
-                                    ▲
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={i === secondary.length - 1}
-                                    onClick={() => handleMoveOrder(i, 'down')}
-                                    className="p-1 px-2.5 rounded-lg bg-white/10 hover:bg-white/25 text-xs text-rose-400 font-bold disabled:opacity-30 disabled:pointer-events-none"
-                                  >
-                                    ▼
-                                  </button>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => moveItem(key, 'primary')}
-                                  className="text-[10px] uppercase font-black tracking-wider text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded-lg transition-colors"
-                                >
-                                  Move To Bar
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {secondary.length === 0 && (
-                          <p className="text-xs text-center py-4 text-gray-500">No items. Move some from the Bottom Bar above!</p>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
+                      <div className="flex items-center space-x-1">
+                        <button
+                          type="button"
+                          disabled={i === 0}
+                          onClick={() => handleMove(i, 'up')}
+                          className="p-1.5 px-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-xs text-blue-600 dark:text-blue-400 font-bold disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-transform cursor-pointer"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          disabled={i === order.length - 1}
+                          onClick={() => handleMove(i, 'down')}
+                          className="p-1.5 px-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-xs text-blue-600 dark:text-blue-400 font-bold disabled:opacity-30 disabled:pointer-events-none active:scale-90 transition-transform cursor-pointer"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
@@ -2139,7 +2103,7 @@ function AppSettingsEditor() {
         </button>
       </form>
 
-      <div className="pt-12 border-t border-white/5">
+      <div className="pt-12 border-t border-gray-200 dark:border-white/5">
         <h3 className="text-xl font-bold flex items-center mb-6"><Lock className="mr-2 w-5 h-5 text-blue-500" /> Administrative Access Pivot</h3>
         <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
           <div className="space-y-1">
@@ -2148,18 +2112,18 @@ function AppSettingsEditor() {
               type="password" 
               value={oldPassword} 
               onChange={e => setOldPassword(e.target.value)} 
-              className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10"
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">New Key</label>
               <input 
                 type="password" 
                 value={newPassword} 
                 onChange={e => setNewPassword(e.target.value)} 
-                className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10"
                 required
               />
             </div>
@@ -2169,12 +2133,12 @@ function AppSettingsEditor() {
                 type="password" 
                 value={confirmPassword} 
                 onChange={e => setConfirmPassword(e.target.value)} 
-                className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10"
                 required
               />
             </div>
           </div>
-          <button disabled={pwLoading} type="submit" className="btn-secondary w-full py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center">
+          <button disabled={pwLoading} type="submit" className="btn-secondary w-full py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center cursor-pointer">
             {pwLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
             Update Access Credentials
           </button>
@@ -2300,12 +2264,12 @@ function SkillEditor() {
 
       {items.length === 0 && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 space-y-4">
-          <p className="text-sm text-gray-400">
-            💡 <strong className="text-white">Default Services Active:</strong> Your public profile is currently displaying default cybersecurity services. To customize, add, edit, or delete them, click below to import them into your database.
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            <strong className="text-gray-900 dark:text-white">Default Services Active:</strong> Your public profile is currently displaying default cybersecurity services. To customize, add, edit, or delete them, click below to import them into your database.
           </p>
           <button
             onClick={seedDefaults}
-            className="btn-primary text-xs flex items-center"
+            className="btn-primary text-xs flex items-center cursor-pointer"
             disabled={seeding}
           >
             {seeding ? (
@@ -2340,7 +2304,7 @@ function SkillEditor() {
 
       {editing && (
         <Modal title={editing.id ? "Edit Service" : "Add Service"} onClose={() => setEditing(null)} onSave={save}>
-          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-6">
             <Input 
               label="Service Name" 
               placeholder="e.g. Penetration Testing & Vulnerability Assessment"
@@ -2357,22 +2321,22 @@ function SkillEditor() {
             />
 
             {/* Customizable Icon Selector */}
-            <div className="space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+            <div className="space-y-3 p-4 rounded-2xl bg-gray-50/70 dark:bg-white/[0.02] border border-gray-200 dark:border-white/10">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-blue-400">
+                <label className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                   Customizable Icon
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-gray-500 font-mono uppercase">Selected:</span>
-                  <div className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center p-1 border border-blue-500/30">
+                  <div className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-500 dark:text-blue-400 flex items-center justify-center p-1 border border-blue-500/30">
                     {React.createElement(getServiceIcon(editing.icon), { className: "w-4 h-4" })}
                   </div>
-                  <span className="text-xs font-mono font-bold text-white">{editing.icon || 'Shield'}</span>
+                  <span className="text-xs font-mono font-bold text-gray-900 dark:text-white">{editing.icon || 'Shield'}</span>
                 </div>
               </div>
 
               {/* Grid of Selectable Icons */}
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-44 overflow-y-auto p-2 bg-black/40 rounded-xl border border-white/5 custom-scrollbar">
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-44 overflow-y-auto p-2 bg-gray-100 dark:bg-black/40 rounded-xl border border-gray-200 dark:border-white/5 custom-scrollbar">
                 {AVAILABLE_SERVICE_ICONS.map((ico) => {
                   const IconComp = ico.icon;
                   const isSelected = (editing.icon || 'Shield') === ico.id;
@@ -2384,7 +2348,7 @@ function SkillEditor() {
                       className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all text-center cursor-pointer group ${
                         isSelected 
                           ? 'bg-blue-600 text-white border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105' 
-                          : 'bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20'
+                          : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/10'
                       }`}
                       title={ico.label}
                     >
@@ -2404,7 +2368,7 @@ function SkillEditor() {
                 />
               </div>
 
-              <div className="pt-2 border-t border-white/5">
+              <div className="pt-2 border-t border-gray-200 dark:border-white/5">
                 <ImageUpload 
                   label="Or Upload Custom Icon Image (Optional SVG/PNG)" 
                   value={editing.iconUrl || ''} 
@@ -2513,12 +2477,12 @@ function SpecializationEditor() {
 
       {items.length === 0 && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 space-y-4">
-          <p className="text-sm text-gray-400">
-            💡 <strong className="text-white">Default Specializations Active:</strong> Your public profile is currently displaying default placeholder specializations (<em>SOC Analysis, Digital Forensics, Linux Engineering</em>). To customize, edit, or delete them, click below to import them into your database.
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            <strong className="text-gray-900 dark:text-white">Default Specializations Active:</strong> Your public profile is currently displaying default placeholder specializations (<em>SOC Analysis, Digital Forensics, Linux Engineering</em>). To customize, edit, or delete them, click below to import them into your database.
           </p>
           <button
             onClick={seedDefaults}
-            className="btn-primary text-xs flex items-center"
+            className="btn-primary text-xs flex items-center cursor-pointer"
             disabled={seeding}
           >
             {seeding ? (
@@ -2567,36 +2531,36 @@ function SpecializationEditor() {
 // Reusable Components
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub: string; color?: string }) {
   return (
-    <div className="glass-sm p-8 rounded-[2rem] border border-white/5 relative overflow-hidden group">
+    <div className="glass-sm p-5 sm:p-8 rounded-3xl sm:rounded-[2rem] border border-gray-200 dark:border-white/5 relative overflow-hidden group">
       <div className="absolute -right-4 -top-4 w-12 h-12 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all" />
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">{label}</p>
-      <p className={`text-4xl font-black tracking-tighter ${color || ''}`}>{value}</p>
-      <p className="text-[10px] font-mono text-gray-400 mt-2 uppercase">{sub}</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-2">{label}</p>
+      <p className={`text-2xl sm:text-4xl font-black tracking-tighter ${color || 'text-gray-900 dark:text-white'}`}>{value}</p>
+      <p className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-2 uppercase truncate">{sub}</p>
     </div>
   );
 }
 
 function ResourceCard({ name, status, items, usage, limit }: { name: string; status: string; items: { label: string; count: number }[]; usage: string; limit: string }) {
   return (
-    <div className="glass-sm p-6 rounded-[2.5rem] border border-white/5 space-y-6">
-      <div className="flex justify-between items-center">
-        <h4 className="font-bold text-sm uppercase tracking-tight">{name}</h4>
-        <span className="flex items-center space-x-1 text-[10px] font-black uppercase text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
+    <div className="glass-sm p-5 sm:p-6 rounded-3xl sm:rounded-[2.5rem] border border-gray-200 dark:border-white/5 space-y-6">
+      <div className="flex justify-between items-center gap-2">
+        <h4 className="font-bold text-sm uppercase tracking-tight text-gray-900 dark:text-white">{name}</h4>
+        <span className="flex items-center space-x-1 text-[10px] font-black uppercase text-green-600 dark:text-green-500 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20 shrink-0">
            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
            <span>{status}</span>
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {items.map(item => (
-          <div key={item.label} className="p-3 bg-white/5 rounded-2xl border border-white/5">
-             <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{item.label}</p>
-             <p className="text-lg font-black">{item.count}</p>
+          <div key={item.label} className="p-3 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-200/80 dark:border-white/5">
+             <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">{item.label}</p>
+             <p className="text-base sm:text-lg font-black text-gray-900 dark:text-white">{item.count}</p>
           </div>
         ))}
       </div>
-      <div className="pt-2 border-t border-white/5 space-y-1">
-         <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">{usage}</p>
-         <p className="text-[8px] font-mono text-gray-500 uppercase tracking-tighter opacity-60">Limit: {limit}</p>
+      <div className="pt-2 border-t border-gray-200 dark:border-white/5 space-y-1">
+         <p className="text-[10px] font-mono text-gray-600 dark:text-gray-400 uppercase tracking-widest">{usage}</p>
+         <p className="text-[8px] font-mono text-gray-500 uppercase tracking-tighter opacity-75">Limit: {limit}</p>
       </div>
     </div>
   );
@@ -2605,17 +2569,31 @@ function ResourceCard({ name, status, items, usage, limit }: { name: string; sta
 function Input({ label, value, onChange, textarea, type = "text", placeholder }: { label: string; value: string; onChange: (v: string) => void; textarea?: boolean; type?: string; placeholder?: string }) {
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">{label}</label>
+      <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</label>
       {textarea ? (
-        <textarea placeholder={placeholder} className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all" value={value} onChange={e => onChange(e.target.value)} rows={3} />
+        <textarea placeholder={placeholder} className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all text-gray-900 dark:text-white placeholder:text-gray-400" value={value} onChange={e => onChange(e.target.value)} rows={3} />
       ) : (
-        <input placeholder={placeholder} type={type} className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all" value={value} onChange={e => onChange(e.target.value)} />
+        <input placeholder={placeholder} type={type} className="w-full glass-sm p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 transition-all text-gray-900 dark:text-white placeholder:text-gray-400" value={value} onChange={e => onChange(e.target.value)} />
       )}
     </div>
   );
 }
 
-function MultiImageUpload({ label, images, onChange, path, targetId }: { label: string; images: string[]; onChange: (urls: string[]) => void; path: string; targetId?: string }) {
+function MultiImageUpload({
+  label,
+  images,
+  onChange,
+  onImageUploaded,
+  path,
+  targetId,
+}: {
+  label: string;
+  images: string[];
+  onChange: (urls: string[]) => void;
+  onImageUploaded?: (file: File) => void;
+  path: string;
+  targetId?: string;
+}) {
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2643,6 +2621,10 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
       
       const data = await response.json();
       onChange([...images, data.url]);
+
+      if (onImageUploaded && file.type.startsWith('image/') && file.type !== 'image/svg+xml') {
+        onImageUploaded(file);
+      }
     } catch (error) {
       console.error('Upload error:', error);
       alert('Failed to upload file.');
@@ -2657,13 +2639,13 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
 
   return (
     <div className="space-y-4">
-      <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">{label}</label>
+      <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</label>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {images.map((img, i) => {
           const isPdf = img.toLowerCase().includes('.pdf') || img.toLowerCase().split('?')[0].endsWith('.pdf');
           const isVid = isVideoMedia(img);
           return (
-            <div key={i} className="relative aspect-video rounded-xl overflow-hidden glass-sm border border-white/10 group flex items-center justify-center bg-black/40">
+            <div key={i} className="relative aspect-video rounded-xl overflow-hidden glass-sm border border-gray-200 dark:border-white/10 group flex items-center justify-center bg-gray-100 dark:bg-black/40">
               {isPdf ? (
                 <div className="flex flex-col items-center justify-center text-center p-4 w-full h-full bg-red-500/5 hover:bg-red-500/10 transition-colors">
                   <FileText className="w-8 h-8 text-red-500 mb-2 animate-pulse" />
@@ -2680,7 +2662,7 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
                   </span>
                 </div>
               ) : (
-                <img src={img} alt="Gallery" className="w-full h-full object-cover" />
+                <img src={img} alt="Gallery" loading="lazy" decoding="async" className="w-full h-full object-cover" />
               )}
               <button 
                 onClick={(e) => { e.preventDefault(); removeImage(img); }} 
@@ -2692,7 +2674,7 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
             </div>
           );
         })}
-        <label className="aspect-video rounded-xl border-2 border-dashed border-white/10 hover:border-blue-500/50 flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-blue-500/5 group">
+        <label className="aspect-video rounded-xl border-2 border-dashed border-gray-300 dark:border-white/10 hover:border-blue-500/50 flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-blue-500/5 group">
           <input type="file" accept="image/*,video/*,.mp4,.webm,.mov,.ogg,.m4v,application/pdf" onChange={handleFileChange} className="hidden" />
           {uploading ? (
             <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
@@ -2710,6 +2692,7 @@ function MultiImageUpload({ label, images, onChange, path, targetId }: { label: 
 
 function FileUpload({ label, value, onChange, path, targetId, accept }: { label: string; value: string; onChange: (url: string) => void; path: string; targetId?: string; accept?: string }) {
   const [uploading, setUploading] = useState(false);
+  const inputId = useId();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2748,30 +2731,30 @@ function FileUpload({ label, value, onChange, path, targetId, accept }: { label:
 
   return (
     <div className="space-y-4">
-      <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">{label}</label>
-      <div className="flex items-center gap-6 p-6 glass-sm rounded-[2rem] border border-white/5 bg-white/5">
-        <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-          <FileText className="w-8 h-8 text-blue-500" />
+      <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</label>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-4 sm:p-6 glass-sm rounded-3xl sm:rounded-[2rem] border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-white/5">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 flex-shrink-0">
+          <FileText className="w-7 h-7 sm:w-8 sm:h-8 text-blue-500" />
         </div>
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 min-w-0 space-y-2 w-full">
           {value ? (
-            <div className="flex items-center space-x-2 text-green-500">
-               <CheckCircle2 className="w-4 h-4" />
-               <span className="text-xs font-bold font-mono truncate max-w-[200px]">{value.split('/').pop()?.split('?')[0]}</span>
+            <div className="flex items-center space-x-2 text-green-600 dark:text-green-500 min-w-0">
+               <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+               <span className="text-xs font-bold font-mono truncate">{value.split('/').pop()?.split('?')[0]}</span>
             </div>
           ) : (
             <p className="text-xs text-gray-500">No file uploaded yet.</p>
           )}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <input 
               type="file" 
               accept={accept || "*/*"} 
               onChange={handleFileChange}
               className="hidden" 
-              id={`file-upload-${label}`}
+              id={inputId}
             />
             <label 
-              htmlFor={`file-upload-${label}`}
+              htmlFor={inputId}
               className="btn-secondary py-2 px-4 text-xs cursor-pointer inline-flex items-center"
             >
               {uploading ? (
@@ -2799,6 +2782,7 @@ function FileUpload({ label, value, onChange, path, targetId, accept }: { label:
 
 function ImageUpload({ label, value, onChange, path, targetId }: { label: string; value: string; onChange: (url: string) => void; path: string; targetId?: string }) {
   const [uploading, setUploading] = useState(false);
+  const inputId = useId();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2834,26 +2818,26 @@ function ImageUpload({ label, value, onChange, path, targetId }: { label: string
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">{label}</label>
-      <div className="flex items-center gap-4">
-        <div className="w-24 h-24 rounded-2xl glass-sm overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-white/5 border border-dashed border-gray-300 dark:border-white/10">
+      <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</label>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="w-24 h-24 rounded-2xl glass-sm overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-white/5 border border-dashed border-gray-300 dark:border-white/10 flex-shrink-0">
           {value ? (
             <img src={value} alt="Preview" className="w-full h-full object-cover" />
           ) : (
             <ImageIcon className="w-8 h-8 text-gray-400" />
           )}
         </div>
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           <input 
             type="file" 
             accept="image/*" 
             onChange={handleFileChange}
             className="hidden" 
-            id={`file-${label}`}
+            id={inputId}
           />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <label 
-              htmlFor={`file-${label}`}
+              htmlFor={inputId}
               className="btn-secondary cursor-pointer inline-flex items-center mb-0"
             >
               {uploading ? (
@@ -2892,25 +2876,25 @@ const ListItem: React.FC<{
   isLast?: boolean;
 }> = ({ title, subtitle, imageUrl, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, isLast }) => {
   return (
-    <div className="glass-sm p-6 rounded-2xl flex items-center justify-between group">
-      <div className="flex items-center space-x-4">
+    <div className="glass-sm p-4 sm:p-6 rounded-2xl flex items-center justify-between gap-3 group">
+      <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
         {imageUrl && (
-          <div className="w-20 aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex-shrink-0 flex items-center justify-center">
-            <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+          <div className="w-16 sm:w-20 aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex-shrink-0 flex items-center justify-center">
+            <img src={imageUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
           </div>
         )}
-        <div>
-          <h4 className="font-bold text-lg text-gray-900 dark:text-white leading-tight">{title}</h4>
-          <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+        <div className="min-w-0">
+          <h4 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white leading-tight truncate">{title}</h4>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{subtitle}</p>
         </div>
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
         {onMoveUp && (
           <button 
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoveUp(); }} 
             disabled={isFirst}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 disabled:opacity-25 disabled:pointer-events-none rounded-lg transition-all"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 disabled:opacity-25 disabled:pointer-events-none rounded-lg transition-all cursor-pointer"
             title="Move Up"
           >
             <ChevronUp className="w-5 h-5" />
@@ -2921,42 +2905,66 @@ const ListItem: React.FC<{
             type="button"
             onClick={(e) => { e.stopPropagation(); onMoveDown(); }} 
             disabled={isLast}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 disabled:opacity-25 disabled:pointer-events-none rounded-lg transition-all"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400 disabled:opacity-25 disabled:pointer-events-none rounded-lg transition-all cursor-pointer"
             title="Move Down"
           >
             <ChevronDown className="w-5 h-5" />
           </button>
         )}
-        <button onClick={onEdit} className="p-2 hover:bg-blue-500/10 text-blue-500 rounded-lg"><ChevronRight className="w-5 h-5" /></button>
-        <button onClick={onDelete} className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg"><Trash2 className="w-5 h-5" /></button>
+        <button onClick={onEdit} className="p-2 hover:bg-blue-500/10 text-blue-500 rounded-lg cursor-pointer"><ChevronRight className="w-5 h-5" /></button>
+        <button onClick={onDelete} className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg cursor-pointer"><Trash2 className="w-5 h-5" /></button>
       </div>
     </div>
   );
 }
 
-function Modal({ title, children, onClose, onSave }: { title: string; children: React.ReactNode; onClose: () => void; onSave: (e: React.FormEvent) => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" onClick={onClose} />
+function Modal({ title, children, onClose, onSave, readOnly }: { title: string; children: React.ReactNode; onClose: () => void; onSave?: (e: React.FormEvent) => void; readOnly?: boolean }) {
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
+      <div className="absolute inset-0 bg-black/85 dark:bg-black/90 backdrop-blur-2xl" onClick={onClose} />
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }} 
         animate={{ opacity: 1, scale: 1, y: 0 }} 
-        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 w-full max-w-2xl p-8 rounded-[2.5rem] relative z-10 max-h-[90vh] overflow-y-auto shadow-[0_40px_120px_rgba(37,99,235,0.1)]"
+        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 w-full max-w-2xl p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] relative z-10 max-h-[90dvh] overflow-y-auto custom-scrollbar shadow-[0_40px_120px_rgba(37,99,235,0.15)]"
       >
-        <div className="flex justify-between items-center mb-8">
-          <h3 className="text-2xl font-bold">{title}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{title}</h3>
+          <button type="button" onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-gray-700 dark:text-white cursor-pointer"><X className="w-6 h-6" /></button>
         </div>
-        <form onSubmit={onSave} className="space-y-6">
-          {children}
-          <div className="flex justify-end gap-4 pt-6">
-            <button key="cancel" type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-            <button key="save" type="submit" className="btn-primary">Save Changes</button>
+        {readOnly ? (
+          <div className="space-y-6">
+            {children}
+            <div className="flex justify-end pt-6">
+              <button type="button" onClick={onClose} className="btn-secondary cursor-pointer">Close</button>
+            </div>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={onSave} className="space-y-6">
+            {children}
+            <div className="flex justify-end gap-4 pt-6">
+              <button key="cancel" type="button" onClick={onClose} className="btn-secondary cursor-pointer">Cancel</button>
+              <button key="save" type="submit" className="btn-primary cursor-pointer">Save Changes</button>
+            </div>
+          </form>
+        )}
       </motion.div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
 }
 
 function ContactSectionEditor() {

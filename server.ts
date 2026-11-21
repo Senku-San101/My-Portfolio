@@ -113,16 +113,20 @@ async function startServer() {
     });
   });
 
-  // Serve uploads directory - try both persistent and fallback
-  // Serve uploads directory - try both persistent and fallback
-  app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
-  app.use("/uploads", (req, res, next) => {
-    express.static(uploadDir)(req, res, next);
-  });
+  // Serve uploads directory with immutable browser caching (unique/versioned filenames)
+  const blobStaticOptions = {
+    maxAge: '365d',
+    immutable: true,
+    setHeaders: (res: express.Response) => {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    }
+  };
+  app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads"), blobStaticOptions));
+  app.use("/uploads", express.static(uploadDir, blobStaticOptions));
   
   // Local static serving for /api/blobs
-  app.use("/api/blobs", express.static(path.join(process.cwd(), "public", "uploads")));
-  app.use("/api/blobs", express.static(uploadDir));
+  app.use("/api/blobs", express.static(path.join(process.cwd(), "public", "uploads"), blobStaticOptions));
+  app.use("/api/blobs", express.static(uploadDir, blobStaticOptions));
 
   // Dynamic fallback proxy for /api/blobs: if missing locally, fetch from live Netlify site and cache
   app.get("/api/blobs/:blobName", async (req, res, next) => {
@@ -133,8 +137,14 @@ async function startServer() {
       const localPath = path.join(uploadDir, blobName);
       const pubPath = path.join(process.cwd(), "public", "uploads", blobName);
 
-      if (fs.existsSync(localPath)) return res.sendFile(localPath);
-      if (fs.existsSync(pubPath)) return res.sendFile(pubPath);
+      if (fs.existsSync(localPath)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.sendFile(localPath);
+      }
+      if (fs.existsSync(pubPath)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.sendFile(pubPath);
+      }
 
       // Fetch from live Netlify site
       const remoteUrl = `https://abdulrahmankamal.netlify.app/api/blobs/${encodeURIComponent(blobName)}`;
@@ -151,6 +161,7 @@ async function startServer() {
         }
         const contentType = remoteRes.headers.get("content-type") || "application/octet-stream";
         res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         return res.send(buffer);
       }
     } catch (err) {

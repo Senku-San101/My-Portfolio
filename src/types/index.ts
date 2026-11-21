@@ -42,6 +42,7 @@ export interface Certificate {
   date: string;
   credentialId?: string;
   imageUrl?: string;
+  thumbnailUrl?: string;
   images?: string[];
   link?: { url: string; text: string };
   order: number;
@@ -147,6 +148,7 @@ export interface AppSettings {
   socialDescription?: string;
   socialImage?: string;
   showVideoThumbnailAsProjectImage?: boolean;
+  showTerminalEntrance?: boolean;
 }
 
 export type VaultCategory = 

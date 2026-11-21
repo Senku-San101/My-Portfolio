@@ -139,9 +139,9 @@ export default function SkillsPage() {
   }
 
   return (
-    <PageWrapper className="space-y-16 py-12">
+    <PageWrapper className="space-y-12 md:space-y-16 py-8 md:py-12">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic">
+        <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tighter uppercase italic">
           <ScrambleHeader text={t('skills')} />
         </h1>
         <div className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto font-medium text-sm md:text-base">
@@ -169,7 +169,7 @@ export default function SkillsPage() {
               viewport={{ once: true }}
               transition={{ delay: Math.min(i * 0.08, 0.4), duration: 0.5 }}
               whileHover={{ y: -8, borderColor: 'rgba(59, 130, 246, 0.45)' }}
-              className="glass-md p-8 md:p-10 rounded-[2.5rem] border border-white/10 shadow-2xl group transition-all duration-500 flex flex-col justify-between relative overflow-hidden bg-white/[0.02]"
+              className="glass-md p-6 sm:p-8 md:p-10 rounded-[2rem] sm:rounded-[2.5rem] border border-gray-200/80 dark:border-white/10 shadow-2xl group transition-all duration-500 flex flex-col justify-between relative overflow-hidden bg-white/75 dark:bg-white/[0.02]"
             >
               {/* Top ambient glow on hover */}
               <div className="absolute -top-16 -right-16 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500 pointer-events-none" />
@@ -182,6 +182,8 @@ export default function SkillsPage() {
                       <img 
                         src={service.iconUrl} 
                         alt={service.name} 
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-contain" 
                         referrerPolicy="no-referrer"
                       />
@@ -197,7 +199,7 @@ export default function SkillsPage() {
 
                 {/* Name & Description */}
                 <div className="space-y-3">
-                  <h3 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight">
+                  <h3 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight break-words">
                     {service.name}
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed font-normal">

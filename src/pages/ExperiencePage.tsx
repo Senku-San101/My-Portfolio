@@ -84,9 +84,9 @@ export default function ExperiencePage() {
   }
 
   return (
-    <PageWrapper className="max-w-6xl mx-auto space-y-16 py-12 px-4 overflow-hidden">
+    <PageWrapper className="max-w-6xl mx-auto space-y-12 md:space-y-16 py-8 md:py-12 px-2 sm:px-4 overflow-hidden">
       <div className="space-y-4 text-center">
-        <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase italic">
           <ScrambleHeader text={t('journey')} />
         </h1>
         <div className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto font-medium text-sm md:text-base">
@@ -95,11 +95,11 @@ export default function ExperiencePage() {
       </div>
 
       {/* Beautiful Vertical Alternating Timeline Container */}
-      <div className="relative w-full max-w-5xl mx-auto py-12">
+      <div className="relative w-full max-w-5xl mx-auto py-6 md:py-12">
         {/* Central Vertical Line Track (shifts to left on mobile) */}
-        <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-[3px] bg-gradient-to-b from-blue-500/10 via-blue-500/50 to-blue-500/10 -translate-x-1/2 shadow-[0_0_12px_rgba(59,130,246,0.25)]" />
+        <div className="absolute left-4 sm:left-8 md:left-1/2 top-0 bottom-0 w-[3px] bg-gradient-to-b from-blue-500/10 via-blue-500/50 to-blue-500/10 -translate-x-1/2 shadow-[0_0_12px_rgba(59,130,246,0.25)]" />
 
-        <div className="space-y-16 md:space-y-24 relative">
+        <div className="space-y-12 sm:space-y-16 md:space-y-24 relative">
           {experiences.map((exp, i) => {
             const isLeft = i % 2 === 0;
 
@@ -109,17 +109,17 @@ export default function ExperiencePage() {
                 className="relative min-h-[160px] flex items-center"
               >
                 {/* Center Node Dot */}
-                <div className="absolute left-8 md:left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-[#F2F2F7] dark:bg-[#0c0c0e] border border-blue-500/20 dark:border-blue-500/40 shadow-xl flex items-center justify-center">
-                    <div className="w-4.5 h-4.5 rounded-full bg-blue-500 border-2 border-white dark:border-black shadow-[0_0_12px_rgba(59,130,246,0.8)] animate-pulse" />
+                <div className="absolute left-4 sm:left-8 md:left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#F2F2F7] dark:bg-[#0c0c0e] border border-blue-500/20 dark:border-blue-500/40 shadow-xl flex items-center justify-center">
+                    <div className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 rounded-full bg-blue-500 border-2 border-white dark:border-black shadow-[0_0_12px_rgba(59,130,246,0.8)] animate-pulse" />
                   </div>
                 </div>
 
                 {/* Symmetrical Grid for Left/Right Alternation */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-24 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-24 w-full">
                   
                   {/* Left Column Card Container */}
-                  <div className={`pl-16 md:pl-0 flex justify-end items-center ${
+                  <div className={`pl-11 sm:pl-16 md:pl-0 flex justify-end items-center ${
                     isLeft ? 'order-1' : 'order-2 md:opacity-0 pointer-events-none hidden md:flex'
                   }`}>
                     {isLeft && (
@@ -136,11 +136,11 @@ export default function ExperiencePage() {
                         {/* Horizontal connector line for desktop linking card to the central track */}
                         <div className="absolute right-[-48px] top-1/2 -translate-y-1/2 w-[48px] h-[2px] bg-gradient-to-r from-blue-500/30 to-blue-500 hidden md:block" />
                         
-                        <div className="glass-md p-6 rounded-[2rem] hover:shadow-2xl hover:border-blue-500/20 dark:hover:border-blue-500/30 transition-all duration-300 space-y-4 border border-white/5 bg-white/[0.02] text-left">
+                        <div className="glass-md p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] hover:shadow-2xl hover:border-blue-500/20 dark:hover:border-blue-500/30 transition-all duration-300 space-y-4 border border-gray-200/80 dark:border-white/5 bg-white/75 dark:bg-white/[0.02] text-start">
                           <div className="flex items-start gap-4">
                             {exp.imageUrl && (
-                              <div className="w-12 h-12 rounded-xl overflow-hidden glass-sm flex-shrink-0 bg-white/5 flex items-center justify-center p-1.5 border border-white/10">
-                                <img src={exp.imageUrl} alt={exp.company} className="w-full h-full object-contain" />
+                              <div className="w-12 h-12 rounded-xl overflow-hidden glass-sm flex-shrink-0 bg-gray-50 dark:bg-white/5 flex items-center justify-center p-1.5 border border-gray-200 dark:border-white/10">
+                                <img src={exp.imageUrl} alt={exp.company} loading="lazy" decoding="async" className="w-full h-full object-contain" />
                               </div>
                             )}
                             <div>
@@ -198,7 +198,7 @@ export default function ExperiencePage() {
                   </div>
 
                   {/* Right Column Card Container */}
-                  <div className={`pl-16 md:pl-0 flex justify-start items-center ${
+                  <div className={`pl-11 sm:pl-16 md:pl-0 flex justify-start items-center ${
                     !isLeft ? 'order-2' : 'order-1 md:opacity-0 pointer-events-none hidden md:flex'
                   }`}>
                     {!isLeft && (
@@ -215,11 +215,11 @@ export default function ExperiencePage() {
                         {/* Horizontal connector line for desktop linking card to the central track */}
                         <div className="absolute left-[-48px] top-1/2 -translate-y-1/2 w-[48px] h-[2px] bg-gradient-to-l from-blue-500/30 to-blue-500 hidden md:block" />
 
-                        <div className="glass-md p-6 rounded-[2rem] hover:shadow-2xl hover:border-blue-500/20 dark:hover:border-blue-500/30 transition-all duration-300 space-y-4 border border-white/5 bg-white/[0.02] text-left">
+                        <div className="glass-md p-5 sm:p-6 rounded-3xl sm:rounded-[2rem] hover:shadow-2xl hover:border-blue-500/20 dark:hover:border-blue-500/30 transition-all duration-300 space-y-4 border border-gray-200/80 dark:border-white/5 bg-white/75 dark:bg-white/[0.02] text-start">
                           <div className="flex items-start gap-4">
                             {exp.imageUrl && (
-                              <div className="w-12 h-12 rounded-xl overflow-hidden glass-sm flex-shrink-0 bg-white/5 flex items-center justify-center p-1.5 border border-white/10">
-                                <img src={exp.imageUrl} alt={exp.company} className="w-full h-full object-contain" />
+                              <div className="w-12 h-12 rounded-xl overflow-hidden glass-sm flex-shrink-0 bg-gray-50 dark:bg-white/5 flex items-center justify-center p-1.5 border border-gray-200 dark:border-white/10">
+                                <img src={exp.imageUrl} alt={exp.company} loading="lazy" decoding="async" className="w-full h-full object-contain" />
                               </div>
                             )}
                             <div>
